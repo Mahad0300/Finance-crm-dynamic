@@ -497,20 +497,40 @@ select::-webkit-scrollbar {
 
 .page-content {
     flex: 1;
-    padding: 1.75rem 2rem 2.5rem;
+    padding: 1.25rem 2rem 1.5rem;
     min-width: 0;
     width: 100%;
     overflow-y: auto;
     overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.view-section {
+    display: none;
+    width: 100%;
+}
+
+.view-section.active {
+    display: block;
+}
+
+#viewClients.active {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    height: 100%;
 }
 
 .page-header-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
     flex-wrap: wrap;
     gap: 1rem;
+    flex-shrink: 0;
 }
 
 .title-with-meta {
@@ -864,11 +884,12 @@ select::-webkit-scrollbar {
 
 /* Table Bottom Pagination Footer (Clean Attached Bottom Bar) */
 .table-pagination-footer {
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    padding: 0.9rem 1.25rem;
+    padding: 0.75rem 1.25rem;
     border-top: 1px solid var(--sidebar-border);
     background-color: #FFFFFF;
     border-bottom-left-radius: var(--radius-lg);
@@ -881,6 +902,10 @@ select::-webkit-scrollbar {
 
 .table-outer-wrapper {
     width: 100%;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
     border: 1px solid var(--sidebar-border);
     border-radius: var(--radius-lg);
     background-color: #FFFFFF;
@@ -889,13 +914,16 @@ select::-webkit-scrollbar {
 
 .table-scroll-container {
     width: 100%;
+    flex: 1;
+    min-height: 0;
     overflow-x: auto;
-    overflow-y: visible;
+    overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: #CBD5E1 #F9FAFB;
 }
 
 .table-scroll-container::-webkit-scrollbar {
+    width: 6px;
     height: 7px;
 }
 
@@ -916,12 +944,20 @@ select::-webkit-scrollbar {
     white-space: nowrap;
 }
 
+.crm-data-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: #FAFCFA;
+    box-shadow: inset 0 -1px 0 var(--table-border);
+}
+
 .crm-data-table th {
     background-color: #FAFCFA;
     color: var(--text-muted);
     font-size: 0.82rem;
     font-weight: 700;
-    padding: 0.95rem 1rem;
+    padding: 0.85rem 1rem;
     border-bottom: 1px solid var(--table-border);
     user-select: none;
     letter-spacing: 0.03em;

@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clients - Financial Advisor CRM</title>
+    <meta name="description" content="Professional Financial Advisor SaaS CRM - Manage and track all client applications, contract terms, approvals, and residuals.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Main Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Master Rounded Canvas Card (Matching Screenshot) -->
+    <div class="app-canvas">
+        <!-- Sidebar Overlay (Mobile) -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-wrapper">
+                    <div class="brand-icon-leaf">
+                        <i class="fa-solid fa-asterisk"></i>
+                    </div>
+                    <span class="brand-title">Financial Advisor</span>
+                </div>
+                <button class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Close Sidebar">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+
+
+            <!-- Navigation Links -->
+            <nav class="sidebar-nav">
+                <a href="index.html" class="nav-item" id="navDashboard">
+                    <i class="fa-solid fa-table-cells-large nav-icon"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="clients.html" class="nav-item active" id="navClients">
+                    <i class="fa-solid fa-users nav-icon"></i>
+                    <span>Clients</span>
+                    <span class="badge-count" id="navClientCount">0</span>
+                </a>
+            </nav>
+
+            <!-- Bottom Actions: Logout -->
+            <div class="sidebar-bottom">
+                <button class="sidebar-link-btn btn-logout" id="btnLogout" title="Logout">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Wrapper -->
+        <div class="main-wrapper">
+            <!-- Top Navbar -->
+            <header class="top-navbar">
+                <div class="nav-left">
+                    <button class="mobile-menu-btn" id="mobileToggleBtn" aria-label="Toggle Menu">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                </div>
+
+                <div class="nav-right">
+                    <!-- Notifications Bell -->
+                    <button class="notification-bell-btn" title="Notifications">
+                        <i class="fa-regular fa-bell"></i>
+                        <span class="notif-badge">3</span>
+                    </button>
+
+                    <!-- User Profile: Avatar First, Account Name After -->
+                    <div class="user-profile-widget">
+                        <div class="user-avatar-img" style="display: flex; align-items: center; justify-content: center; color: #00B67A; font-weight: 800; font-size: 0.85rem;">
+                            MB
+                        </div>
+                        <div class="user-meta-text">
+                            <span class="user-meta-name">Admin Lead</span>
+                            <span class="user-meta-title">Assistant Manager</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Page Main Content Area -->
+            <main class="page-content" id="mainContent">
+                <section class="view-section active" id="viewClients">
+                    <!-- Header with Title & Action Buttons -->
+                    <div class="page-header-row">
+                        <div class="title-with-meta">
+                            <h1 class="page-main-title">Clients</h1>
+                        </div>
+
+                        <div class="header-action-buttons">
+                            <button class="btn-header-export" id="btnExportHeader">
+                                <i class="fa-solid fa-arrow-up-from-bracket"></i>
+                                <span>Export</span>
+                            </button>
+                            <button class="btn-header-add" id="btnOpenAddModal">
+                                <i class="fa-solid fa-plus"></i>
+                                <span>Add New Client</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Clean Toolbar: Search, Filter Dropdowns, Pagination Controls -->
+                    <div class="crm-toolbar">
+                        <div class="toolbar-left">
+                            <!-- Search Input -->
+                            <div class="search-box-pill">
+                                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                                <input type="text" id="searchInput" class="search-input-pill" placeholder="Search by Client, Connector, Agent, Closer...">
+                                <button class="search-clear-pill" id="searchClearBtn" aria-label="Clear search" style="display: none;">
+                                    <i class="fa-solid fa-circle-xmark"></i>
+                                </button>
+                            </div>
+
+                            <!-- Filter: Status -->
+                            <div class="filter-select-wrapper">
+                                <i class="fa-solid fa-filter filter-icon-left"></i>
+                                <select id="filterStatus" class="filter-select-pill">
+                                    <option value="">All Status</option>
+                                    <option value="Submit">Submit</option>
+                                    <option value="Charged">Charged</option>
+                                    <option value="Kick Back">Kick Back</option>
+                                </select>
+                                <i class="fa-solid fa-chevron-down filter-icon-right"></i>
+                            </div>
+
+                            <!-- Filter: Plan -->
+                            <div class="filter-select-wrapper">
+                                <i class="fa-solid fa-calendar-days filter-icon-left"></i>
+                                <select id="filterPlan" class="filter-select-pill">
+                                    <option value="">All Plans</option>
+                                </select>
+                                <i class="fa-solid fa-chevron-down filter-icon-right"></i>
+                            </div>
+
+                            <!-- Filter: Receiving -->
+                            <div class="filter-select-wrapper">
+                                <i class="fa-solid fa-money-check-dollar filter-icon-left"></i>
+                                <select id="filterReceiving" class="filter-select-pill">
+                                    <option value="">All Receiving</option>
+                                    <option value="Received">Received</option>
+                                    <option value="Pending">Pending</option>
+                                </select>
+                                <i class="fa-solid fa-chevron-down filter-icon-right"></i>
+                            </div>
+
+                            <!-- Reset Filters Button -->
+                            <button class="btn-toolbar-reset" id="btnResetFilters" title="Reset All Filters">
+                                <i class="fa-solid fa-rotate-left"></i>
+                                <span>Reset</span>
+                            </button>
+                        </div>
+
+                        <!-- Right Toolbar: Per Page Controls -->
+                        <div class="toolbar-right">
+                            <div class="per-page-wrapper">
+                                <label for="selectRowsPerPage" class="per-page-label">Per page:</label>
+                                <select id="selectRowsPerPage" class="per-page-select">
+                                    <option value="10" selected>10</option>
+                                    <option value="25">25</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Client Data Table Outer Card -->
+                    <div class="table-outer-wrapper">
+                        <div class="table-scroll-container">
+                            <table class="crm-data-table" id="clientsTable">
+                                <thead>
+                                    <tr>
+                                        <th class="sortable" data-sort="date">
+                                            <span>Date</span>
+                                            <i class="fa-solid fa-sort sort-caret"></i>
+                                        </th>
+                                        <th class="sortable" data-sort="clientName">
+                                            <span>Client Name</span>
+                                            <i class="fa-solid fa-sort sort-caret"></i>
+                                        </th>
+                                        <th class="sortable" data-sort="connector">
+                                            <span>Connector</span>
+                                            <i class="fa-solid fa-sort sort-caret"></i>
+                                        </th>
+                                        <th class="sortable" data-sort="smartAgent">
+                                            <span>Smart Agent</span>
+                                            <i class="fa-solid fa-sort sort-caret"></i>
+                                        </th>
+                                        <th class="sortable" data-sort="superAgent">
+                                            <span>Super Agent</span>
+                                            <i class="fa-solid fa-sort sort-caret"></i>
+                                        </th>
+                                        <th class="sortable" data-sort="closer">
+                                            <span>Closer</span>
+                                            <i class="fa-solid fa-sort sort-caret"></i>
+                                        </th>
+                                        <th class="sortable" data-sort="status">
+                                            <span>Status</span>
+                                            <i class="fa-solid fa-sort sort-caret"></i>
+                                        </th>
+                                        <th class="sortable" data-sort="plan">
+                                            <span>Plan</span>
+                                            <i class="fa-solid fa-sort sort-caret"></i>
+                                        </th>
+                                        <th class="sortable text-right" data-sort="monthly">
+                                            <span>Monthly</span>
+                                            <i class="fa-solid fa-sort sort-caret"></i>
+                                        </th>
+                                        <th class="sortable text-right" data-sort="initialPayment">
+                                            <span>Initial Payment</span>
+                                            <i class="fa-solid fa-sort sort-caret"></i>
+                                        </th>
+                                        <th class="sortable" data-sort="initialPaymentDate">
+                                            <span>Initial Date</span>
+                                            <i class="fa-solid fa-sort sort-caret"></i>
+                                        </th>
+                                        <th class="sortable text-right" data-sort="residual">
+                                            <span>Residual</span>
+                                            <i class="fa-solid fa-sort sort-caret"></i>
+                                        </th>
+                                        <th class="sortable text-right" data-sort="approvalAmount">
+                                            <span>Approval Amount</span>
+                                            <i class="fa-solid fa-sort sort-caret"></i>
+                                        </th>
+                                        <th class="sortable text-center" data-sort="receiving">
+                                            <span>Receiving</span>
+                                            <i class="fa-solid fa-sort sort-caret"></i>
+                                        </th>
+                                    </tr>
+                                    <!-- Inline Table Input Row (Shown on clicking Add New Client) -->
+                                    <tr class="inline-entry-row" id="inlineAddRow" style="display: none;" title="Type client data and press Enter to save">
+                                        <td>
+                                            <input type="date" class="tbl-input" id="tblDate">
+                                        </td>
+                                        <td>
+                                            <input type="text" class="tbl-input" id="tblClientName" placeholder="Client Name..." style="font-weight: 700;">
+                                        </td>
+                                        <td>
+                                            <input type="text" class="tbl-input" id="tblConnector" placeholder="Connector...">
+                                        </td>
+                                        <td>
+                                            <div class="agent-select-wrapper" data-role="smart" data-target="tblSmartAgent">
+                                                <input type="hidden" id="tblSmartAgent" value="">
+                                                <button type="button" class="btn-agent-select-trigger" id="btnTrigger_tblSmartAgent" onclick="openAgentPopover(this, 'smart', 'tblSmartAgent')">
+                                                    <span class="agent-select-label">-- Select --</span>
+                                                    <i class="fa-solid fa-chevron-down caret-icon"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="agent-select-wrapper" data-role="super" data-target="tblSuperAgent">
+                                                <input type="hidden" id="tblSuperAgent" value="">
+                                                <button type="button" class="btn-agent-select-trigger" id="btnTrigger_tblSuperAgent" onclick="openAgentPopover(this, 'super', 'tblSuperAgent')">
+                                                    <span class="agent-select-label">-- Select --</span>
+                                                    <i class="fa-solid fa-chevron-down caret-icon"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="agent-select-wrapper" data-role="closer" data-target="tblCloser">
+                                                <input type="hidden" id="tblCloser" value="">
+                                                <button type="button" class="btn-agent-select-trigger" id="btnTrigger_tblCloser" onclick="openAgentPopover(this, 'closer', 'tblCloser')">
+                                                    <span class="agent-select-label">-- Select --</span>
+                                                    <i class="fa-solid fa-chevron-down caret-icon"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <select class="tbl-select" id="tblStatus">
+                                                <option value="Submit">Submit</option>
+                                                <option value="Charged">Charged</option>
+                                                <option value="Kick Back">Kick Back</option>
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <select class="tbl-select" id="tblPlan"></select>
+                                        </td>
+                                        <td>
+                                            <input type="number" step="0.01" class="tbl-input text-right" id="tblMonthly" placeholder="0.00">
+                                        </td>
+                                        <td>
+                                            <input type="number" step="0.01" class="tbl-input text-right" id="tblInitialPayment" placeholder="0.00">
+                                        </td>
+                                        <td>
+                                            <input type="date" class="tbl-input" id="tblInitialPaymentDate">
+                                        </td>
+                                        <td>
+                                            <div class="tbl-calc-badge" id="tblResidual">$0</div>
+                                        </td>
+                                        <td>
+                                            <div class="tbl-calc-badge" id="tblApprovalAmount" style="color: var(--text-main);">$0</div>
+                                        </td>
+                                        <td>
+                                            <select class="tbl-select" id="tblReceiving">
+                                                <option value="Pending">Pending</option>
+                                                <option value="Received">Received</option>
+                                            </select>
+                                        </td>
+                                    </tr>
+                                </thead>
+                                <tbody id="clientsTableBody">
+                                    <!-- Populated dynamically via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Table Bottom Pagination Footer -->
+                        <div class="table-pagination-footer" id="tablePaginationFooter">
+                            <span class="pagination-range-text" id="tableResultsCount">1 &ndash; 10 of 12</span>
+                            <div class="pagination-arrow-group" id="paginationControls">
+                                <!-- Dynamic arrow & number buttons -->
+                            </div>
+                        </div>
+
+                        <!-- Empty State -->
+                        <div class="empty-table-state" id="emptyState" style="display: none;">
+                            <div class="empty-icon-wrap">
+                                <i class="fa-solid fa-folder-open"></i>
+                            </div>
+                            <h3 class="empty-title">No clients found</h3>
+                            <p class="empty-desc">There are no client records matching your active search or filters.</p>
+                            <button class="btn-header-add" id="btnEmptyAddClient">
+                                <i class="fa-solid fa-plus"></i>
+                                <span>Add New Client</span>
+                            </button>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL: ADD / EDIT CLIENT ==================== -->
+    <div class="modal-backdrop" id="clientModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <div class="modal-dialog">
+            <div class="modal-card">
+                <div class="modal-top-header">
+                    <div>
+                        <h2 class="modal-heading-title" id="modalTitle">Add New Client</h2>
+                        <p class="modal-heading-sub" id="modalSubtitle">Fill in client contract and payment terms</p>
+                    </div>
+                    <button class="modal-close-icon" id="modalCloseBtn" aria-label="Close modal">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <form id="clientForm" novalidate>
+                    <input type="hidden" id="clientId">
+                    
+                    <div class="modal-scroll-body">
+                        <!-- Section 1: General Info -->
+                        <div class="form-field-grid">
+                            <!-- Date -->
+                            <div class="form-group-item">
+                                <label for="formDate" class="form-input-label required">Application Date</label>
+                                <input type="date" id="formDate" class="custom-input" required>
+                                <span class="error-text-msg" id="errorDate"></span>
+                            </div>
+
+                            <!-- Client Name -->
+                            <div class="form-group-item">
+                                <label for="formClientName" class="form-input-label required">Client Name</label>
+                                <input type="text" id="formClientName" class="custom-input" placeholder="e.g. LAVERNON EDWARDS" required>
+                                <span class="error-text-msg" id="errorClientName"></span>
+                            </div>
+
+                            <!-- Connector -->
+                            <div class="form-group-item">
+                                <label for="formConnector" class="form-input-label">Connector</label>
+                                <input type="text" id="formConnector" class="custom-input" placeholder="e.g. Zabloon Shamaun">
+                                <span class="error-text-msg" id="errorConnector"></span>
+                            </div>
+
+                            <!-- Smart Agent -->
+                            <div class="form-group-item">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <label for="formSmartAgent" class="form-input-label">Smart Agent</label>
+                                    <button type="button" style="color: var(--primary); font-size: 0.72rem; font-weight: 700;" id="btnAddNewSmartAgent">+ Add New</button>
+                                </div>
+                                <select id="formSmartAgent" class="custom-select"></select>
+                            </div>
+
+                            <!-- Super Agent -->
+                            <div class="form-group-item">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <label for="formSuperAgent" class="form-input-label">Super Agent</label>
+                                    <button type="button" style="color: var(--primary); font-size: 0.72rem; font-weight: 700;" id="btnAddNewSuperAgent">+ Add New</button>
+                                </div>
+                                <select id="formSuperAgent" class="custom-select"></select>
+                            </div>
+
+                            <!-- Closer -->
+                            <div class="form-group-item">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <label for="formCloser" class="form-input-label">Closer</label>
+                                    <button type="button" style="color: var(--primary); font-size: 0.72rem; font-weight: 700;" id="btnAddNewCloser">+ Add New</button>
+                                </div>
+                                <select id="formCloser" class="custom-select"></select>
+                            </div>
+
+                            <!-- Status -->
+                            <div class="form-group-item">
+                                <label for="formStatus" class="form-input-label required">Status</label>
+                                <select id="formStatus" class="custom-select" required>
+                                    <option value="Submit">Submit</option>
+                                    <option value="Charged">Charged</option>
+                                    <option value="Kick Back">Kick Back</option>
+                                </select>
+                            </div>
+
+                            <!-- Plan -->
+                            <div class="form-group-item">
+                                <label for="formPlan" class="form-input-label required">Plan Duration</label>
+                                <select id="formPlan" class="custom-select" required></select>
+                            </div>
+
+                            <!-- Receiving -->
+                            <div class="form-group-item">
+                                <label for="formReceiving" class="form-input-label required">Receiving Status</label>
+                                <select id="formReceiving" class="custom-select" required>
+                                    <option value="Pending">Pending</option>
+                                    <option value="Received">Received</option>
+                                </select>
+                            </div>
+
+                            <!-- Monthly -->
+                            <div class="form-group-item">
+                                <label for="formMonthly" class="form-input-label required">Monthly Payment ($)</label>
+                                <input type="number" id="formMonthly" class="custom-input" step="0.01" min="0" placeholder="0.00" required>
+                                <span class="error-text-msg" id="errorMonthly"></span>
+                            </div>
+
+                            <!-- Initial Payment -->
+                            <div class="form-group-item">
+                                <label for="formInitialPayment" class="form-input-label required">Initial Payment ($)</label>
+                                <input type="number" id="formInitialPayment" class="custom-input" step="0.01" min="0" placeholder="0.00" required>
+                                <span class="error-text-msg" id="errorInitialPayment"></span>
+                            </div>
+
+                            <!-- Initial Payment Date -->
+                            <div class="form-group-item">
+                                <label for="formInitialPaymentDate" class="form-input-label">Initial Payment Date</label>
+                                <input type="date" id="formInitialPaymentDate" class="custom-input">
+                            </div>
+                        </div>
+
+                        <!-- Automated Calculation Banner -->
+                        <div class="calc-preview-card">
+                            <div class="form-field-grid">
+                                <div>
+                                    <label class="form-input-label">Approval Amount (Auto)</label>
+                                    <div class="read-only-preview" id="displayApprovalAmount">$0.00</div>
+                                    <input type="hidden" id="formApprovalAmount" value="0">
+                                    <span style="font-size: 0.72rem; color: var(--primary); font-weight: 600;" id="approvalRuleMatchText">Matched rule</span>
+                                </div>
+                                <div>
+                                    <label class="form-input-label">Residual (5% of Approval)</label>
+                                    <div class="read-only-preview" id="displayResidual">$0.00</div>
+                                    <input type="hidden" id="formResidual" value="0">
+                                    <span style="font-size: 0.72rem; color: var(--primary); font-weight: 600;">Auto-calculated 5%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-action-footer">
+                        <button type="button" class="btn-header-export" id="modalCancelBtn">Cancel</button>
+                        <button type="submit" class="btn-header-add" id="modalSaveBtn">
+                            <i class="fa-solid fa-floppy-disk"></i>
+                            <span id="modalSaveBtnText">Save Client</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL: VIEW CLIENT DETAILS ==================== -->
+    <div class="modal-backdrop" id="viewModal" role="dialog" aria-modal="true" aria-labelledby="viewModalTitle">
+        <div class="modal-dialog">
+            <div class="modal-card">
+                <div class="modal-top-header">
+                    <div>
+                        <h2 class="modal-heading-title" id="viewModalTitle">Client Details</h2>
+                        <p class="modal-heading-sub">Application terms and financial summary</p>
+                    </div>
+                    <button class="modal-close-icon" id="viewModalCloseBtn" aria-label="Close modal">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <div class="modal-scroll-body" id="viewModalBody">
+                    <!-- Populated dynamically via JS -->
+                </div>
+
+                <div class="modal-action-footer">
+                    <button type="button" class="btn-header-export" id="viewModalCloseBtn2">Close</button>
+                    <button type="button" class="btn-header-export" id="viewModalDeleteBtn" style="color: var(--danger); border-color: #FECACA;">
+                        <i class="fa-solid fa-trash-can"></i>
+                        <span>Delete</span>
+                    </button>
+                    <button type="button" class="btn-header-add" id="viewModalEditBtn">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                        <span>Edit Client</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL: DELETE CONFIRMATION ==================== -->
+    <div class="modal-backdrop" id="deleteModal" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle">
+        <div class="modal-dialog modal-dialog-sm">
+            <div class="modal-card">
+                <div class="modal-top-header" style="background-color: #FEF2F2;">
+                    <div>
+                        <h2 class="modal-heading-title" style="color: var(--danger);" id="deleteModalTitle">Delete Client</h2>
+                        <p class="modal-heading-sub">Confirm permanent record removal</p>
+                    </div>
+                    <button class="modal-close-icon" id="deleteModalCloseBtn" aria-label="Close modal">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <div class="modal-scroll-body">
+                    <p style="font-size: 1rem; color: var(--text-main); margin-bottom: 0.5rem;">
+                        Are you sure you want to delete <strong id="deleteClientName">this client</strong>?
+                    </p>
+                    <p style="font-size: 0.85rem; color: var(--text-muted);">
+                        This will remove the record from localStorage and recalculate all financial statistics.
+                    </p>
+                </div>
+
+                <div class="modal-action-footer">
+                    <button type="button" class="btn-header-export" id="deleteCancelBtn">Cancel</button>
+                    <button type="button" class="btn-header-add" id="deleteConfirmBtn" style="background-color: var(--danger);">
+                        <i class="fa-solid fa-trash-can"></i>
+                        <span>Delete Client</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL: ADD CUSTOM AGENT ==================== -->
+    <div class="modal-backdrop" id="agentModal" role="dialog" aria-modal="true" aria-labelledby="agentModalTitle">
+        <div class="modal-dialog modal-dialog-sm">
+            <div class="modal-card">
+                <div class="modal-top-header">
+                    <div>
+                        <h2 class="modal-heading-title" id="agentModalTitle">Add New Agent</h2>
+                        <p class="modal-heading-sub" id="agentModalSubtitle">Add to persistent dropdown selections</p>
+                    </div>
+                    <button class="modal-close-icon" id="agentModalCloseBtn" aria-label="Close modal">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <form id="agentForm" novalidate>
+                    <div class="modal-scroll-body">
+                        <div class="form-group-item">
+                            <label for="agentNameInput" class="form-input-label required">Agent Full Name</label>
+                            <input type="text" id="agentNameInput" class="custom-input" placeholder="e.g. John Doe" required autofocus>
+                            <span class="error-text-msg" id="agentNameError"></span>
+                        </div>
+                    </div>
+
+                    <div class="modal-action-footer">
+                        <button type="button" class="btn-header-export" id="agentCancelBtn">Cancel</button>
+                        <button type="submit" class="btn-header-add" id="agentSaveBtn">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>Save Agent</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Agent Datalists for Combobox / Quick Custom Input -->
+    <datalist id="smartAgentDatalist"></datalist>
+    <datalist id="superAgentDatalist"></datalist>
+    <datalist id="closerDatalist"></datalist>
+
+    <!-- Toast Notifications Container -->
+    <div class="toast-container" id="toastContainer" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- Application Script -->
+    <script src="script.js"></script>
+</body>
+</html>

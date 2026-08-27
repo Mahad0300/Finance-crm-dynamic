@@ -17,13 +17,11 @@ const STORAGE_KEYS = {
 
 // Configurable Approval Rules
 const approvalRules = [
-    { min: 0, max: 100, approval: 500 },
-    { min: 100.01, max: 200, approval: 700 },
-    { min: 200.01, max: 300, approval: 900 },
-    { min: 300.01, max: 400, approval: 1200 },
-    { min: 401, max: 500, approval: 1500 },
-    { min: 501, max: 1000, approval: 2000 },
-    { min: 1001, max: 10000, approval: 3000 }
+    { min: 0, max: 99.99, approval: 500 },
+    { min: 100, max: 249.99, approval: 700 },
+    { min: 250, max: 400, approval: 900 },
+    { min: 400.01, max: 500, approval: 1000 },
+    { min: 500.01, max: 100000, approval: 1100 }
 ];
 
 // Available Plans (1 to 120 Months)
@@ -49,8 +47,8 @@ const sampleClients = [
         monthly: 359.49,
         initialPayment: 359.49,
         initialPaymentDate: "2026-09-01",
-        residual: 60.00,
-        approvalAmount: 1200.00,
+        residual: 45.00,
+        approvalAmount: 900.00,
         receiving: "Pending"
     },
     {
@@ -66,8 +64,8 @@ const sampleClients = [
         monthly: 420.00,
         initialPayment: 420.00,
         initialPaymentDate: "2026-09-02",
-        residual: 75.00,
-        approvalAmount: 1500.00,
+        residual: 50.00,
+        approvalAmount: 1000.00,
         receiving: "Received"
     },
     {
@@ -100,8 +98,8 @@ const sampleClients = [
         monthly: 550.00,
         initialPayment: 550.00,
         initialPaymentDate: "2026-09-05",
-        residual: 100.00,
-        approvalAmount: 2000.00,
+        residual: 55.00,
+        approvalAmount: 1100.00,
         receiving: "Received"
     },
     {
@@ -134,8 +132,8 @@ const sampleClients = [
         monthly: 650.00,
         initialPayment: 650.00,
         initialPaymentDate: "2026-09-12",
-        residual: 100.00,
-        approvalAmount: 2000.00,
+        residual: 55.00,
+        approvalAmount: 1100.00,
         receiving: "Received"
     },
     {
@@ -168,8 +166,8 @@ const sampleClients = [
         monthly: 320.00,
         initialPayment: 320.00,
         initialPaymentDate: "2026-09-15",
-        residual: 60.00,
-        approvalAmount: 1200.00,
+        residual: 45.00,
+        approvalAmount: 900.00,
         receiving: "Received"
     },
     {
@@ -185,8 +183,8 @@ const sampleClients = [
         monthly: 210.00,
         initialPayment: 210.00,
         initialPaymentDate: "2026-08-28",
-        residual: 45.00,
-        approvalAmount: 900.00,
+        residual: 35.00,
+        approvalAmount: 700.00,
         receiving: "Pending"
     },
     {
@@ -202,8 +200,8 @@ const sampleClients = [
         monthly: 480.00,
         initialPayment: 480.00,
         initialPaymentDate: "2026-09-18",
-        residual: 75.00,
-        approvalAmount: 1500.00,
+        residual: 50.00,
+        approvalAmount: 1000.00,
         receiving: "Received"
     },
     {
@@ -236,8 +234,8 @@ const sampleClients = [
         monthly: 1200.00,
         initialPayment: 1200.00,
         initialPaymentDate: "2026-09-25",
-        residual: 150.00,
-        approvalAmount: 3000.00,
+        residual: 55.00,
+        approvalAmount: 1100.00,
         receiving: "Received"
     }
 ];
@@ -289,6 +287,17 @@ function initStorage() {
                 saveClients();
             } else {
                 state.clients = parsed;
+                // Auto-recalculate approval and residual with active rules
+                state.clients.forEach(c => {
+                    if (c.initialPayment !== undefined && c.initialPayment !== null) {
+                        const calc = calculateApprovalAndResidual(c.initialPayment);
+                        if (calc.matched) {
+                            c.approvalAmount = calc.approval;
+                            c.residual = calc.residual;
+                        }
+                    }
+                });
+                saveClients();
             }
         } catch (e) {
             console.error('Error parsing stored clients, resetting to sample data', e);
@@ -866,10 +875,13 @@ function renderApprovalRulesMatrix() {
     approvalRules.forEach(r => {
         const row = document.createElement('tr');
         const res = (r.approval * 0.05).toFixed(2);
+        const rangeText = r.max >= 100000 
+            ? `<strong>$${Math.round(r.min)} &ndash; Above</strong>` 
+            : `<strong>$${Math.round(r.min)} &ndash; $${Math.round(r.max)}</strong>`;
         row.innerHTML = `
-            <td><strong>$${r.min.toFixed(2)} - $${r.max.toFixed(2)}</strong></td>
-            <td><span class="badge badge-submit">$${r.approval.toFixed(2)}</span></td>
-            <td><strong class="text-primary">$${res}</strong></td>
+            <td>${rangeText}</td>
+            <td><span class="badge badge-submit">$${r.approval.toLocaleString()}</span></td>
+            <td><strong class="text-primary">$${parseFloat(res)}</strong></td>
         `;
         DOM.approvalRulesTableBody.appendChild(row);
     });

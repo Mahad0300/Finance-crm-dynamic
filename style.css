@@ -56,7 +56,7 @@
 
     /* Layout Dimensions */
     --sidebar-width: 240px;
-    --header-height: 72px;
+    --header-height: 64px;
     --radius-sm: 6px;
     --radius-md: 10px;
     --radius-lg: 14px;
@@ -182,9 +182,9 @@ select::-webkit-scrollbar {
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
-    padding: 1.5rem 1rem 1.25rem 1.25rem;
+    padding: 0;
     z-index: 50;
-    transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), padding 0.25s ease, opacity 0.2s ease, transform 0.25s ease;
+    transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease, transform 0.25s ease;
     position: sticky;
     top: 0;
     height: 100vh;
@@ -210,11 +210,12 @@ select::-webkit-scrollbar {
 }
 
 .sidebar-brand {
+    height: var(--header-height);
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    margin-bottom: 1.75rem;
-    padding: 0 0.5rem;
+    padding: 0 1.25rem;
+    border-bottom: 1px solid var(--sidebar-border);
+    flex-shrink: 0;
 }
 
 .brand-wrapper {
@@ -225,35 +226,17 @@ select::-webkit-scrollbar {
 
 .brand-icon-leaf {
     color: var(--primary);
-    font-size: 1.45rem;
+    font-size: 1.4rem;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
 .brand-title {
-    font-size: 1.2rem;
+    font-size: 1.15rem;
     font-weight: 800;
     color: var(--text-main);
     letter-spacing: -0.02em;
-}
-
-.sidebar-close-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    border-radius: var(--radius-sm);
-    color: var(--text-muted);
-    font-size: 1.1rem;
-    cursor: pointer;
-    transition: var(--transition-fast);
-}
-
-.sidebar-close-btn:hover {
-    background-color: var(--sidebar-hover);
-    color: var(--danger);
 }
 
 .btn-sidebar-add {
@@ -284,6 +267,7 @@ select::-webkit-scrollbar {
     flex-direction: column;
     gap: 0.4rem;
     flex: 1;
+    padding: 1.25rem 1rem;
 }
 
 .nav-item {
@@ -338,7 +322,7 @@ select::-webkit-scrollbar {
 
 .sidebar-bottom {
     margin-top: auto;
-    padding-top: 1rem;
+    padding: 1rem 1.25rem;
     border-top: 1px solid var(--sidebar-border);
     display: flex;
     flex-direction: column;
@@ -421,15 +405,25 @@ select::-webkit-scrollbar {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 38px;
-    height: 38px;
-    font-size: 1.15rem;
+    width: 36px;
+    height: 36px;
+    font-size: 0.95rem;
+    line-height: 1;
     color: var(--text-secondary);
-    border: 1.5px solid var(--sidebar-border);
+    border: 1px solid var(--sidebar-border);
     border-radius: var(--radius-md);
     background-color: #FFFFFF;
     cursor: pointer;
     transition: var(--transition-fast);
+    box-shadow: var(--shadow-sm);
+}
+
+.mobile-menu-btn i {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    line-height: 1;
 }
 
 .mobile-menu-btn:hover {

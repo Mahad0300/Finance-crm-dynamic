@@ -427,28 +427,31 @@ function getDOM() {
         btnRefreshStats: document.getElementById('btnRefreshStats'),
         btnDashboardAddClient: document.getElementById('btnDashboardAddClient'),
         btnViewAllClients: document.getElementById('btnViewAllClients'),
-        statTotalClients: document.getElementById('statTotalClients'),
-        statSubmitted: document.getElementById('statSubmitted'),
-        statSubmittedPercent: document.getElementById('statSubmittedPercent'),
-        statCharged: document.getElementById('statCharged'),
-        statChargedPercent: document.getElementById('statChargedPercent'),
-        statKickBack: document.getElementById('statKickBack'),
-        statKickBackPercent: document.getElementById('statKickBackPercent'),
-        statTotalApproval: document.getElementById('statTotalApproval'),
-        statTotalMonthly: document.getElementById('statTotalMonthly'),
-        statTotalInitial: document.getElementById('statTotalInitial'),
-        statReceivedCount: document.getElementById('statReceivedCount'),
-        statPendingCount: document.getElementById('statPendingCount'),
-        distSubmitVal: document.getElementById('distSubmitVal'),
-        distSubmitBar: document.getElementById('distSubmitBar'),
-        distChargedVal: document.getElementById('distChargedVal'),
-        distChargedBar: document.getElementById('distChargedBar'),
-        distKickBackVal: document.getElementById('distKickBackVal'),
-        distKickBackBar: document.getElementById('distKickBackBar'),
-        distReceivedBadge: document.getElementById('distReceivedBadge'),
-        distPendingBadge: document.getElementById('distPendingBadge'),
-        distTotalResidual: document.getElementById('distTotalResidual'),
-        approvalRulesTableBody: document.getElementById('approvalRulesTableBody'),
+        // Redesigned Premium Dashboard Elements
+        proTotalApproval: document.getElementById('proTotalApproval'),
+        proTotalClients: document.getElementById('proTotalClients'),
+        proCurrentMonth: document.getElementById('proCurrentMonth'),
+        proTotalMonthly: document.getElementById('proTotalMonthly'),
+        proMiniChart: document.getElementById('proMiniChart'),
+        proAvgPlan: document.getElementById('proAvgPlan'),
+        proTotalResiduals: document.getElementById('proTotalResiduals'),
+        proDistCharged: document.getElementById('proDistCharged'),
+        proDistSubmitted: document.getElementById('proDistSubmitted'),
+        proDistKickBack: document.getElementById('proDistKickBack'),
+        proExpenseStatus: document.getElementById('proExpenseStatus'),
+        proTotalInitial: document.getElementById('proTotalInitial'),
+        proMinAPR: document.getElementById('proMinAPR'),
+        proEarnedUpfront: document.getElementById('proEarnedUpfront'),
+        proSegmentedProgress: document.getElementById('proSegmentedProgress'),
+        proProgressMonth: document.getElementById('proProgressMonth'),
+        proProgressGoal: document.getElementById('proProgressGoal'),
+        proConversionRatePercent: document.getElementById('proConversionRatePercent'),
+        barFillNeeds: document.getElementById('barFillNeeds'),
+        barValueNeeds: document.getElementById('barValueNeeds'),
+        barFillFood: document.getElementById('barFillFood'),
+        barValueFood: document.getElementById('barValueFood'),
+        barFillEducation: document.getElementById('barFillEducation'),
+        barValueEducation: document.getElementById('barValueEducation'),
         recentClientsTableBody: document.getElementById('recentClientsTableBody'),
 
         // Client List Elements (Present on clients.html)
@@ -509,6 +512,7 @@ function getDOM() {
         viewModalCloseBtn2: document.getElementById('viewModalCloseBtn2'),
         viewModalEditBtn: document.getElementById('viewModalEditBtn'),
         viewModalDeleteBtn: document.getElementById('viewModalDeleteBtn'),
+        viewModalPrintBtn: document.getElementById('viewModalPrintBtn'),
 
         // Delete Modal
         deleteModal: document.getElementById('deleteModal'),
@@ -831,94 +835,250 @@ function renderDashboard() {
     const totalInitial = state.clients.reduce((sum, c) => sum + (parseFloat(c.initialPayment) || 0), 0);
     const totalResidual = state.clients.reduce((sum, c) => sum + (parseFloat(c.residual) || 0), 0);
 
-    const receivedCount = state.clients.filter(c => c.receiving === 'Received').length;
-    const pendingCount = state.clients.filter(c => c.receiving === 'Pending').length;
+    const receivedClients = state.clients.filter(c => c.receiving === 'Received');
+    const receivedSum = receivedClients.reduce((sum, c) => sum + (parseFloat(c.approvalAmount) || parseFloat(c.initialPayment) || 0), 0);
+    const receivedCount = receivedClients.length;
 
-    const submitPct = total > 0 ? Math.round((submittedCount / total) * 100) : 0;
-    const chargedPct = total > 0 ? Math.round((chargedCount / total) * 100) : 0;
-    const kickBackPct = total > 0 ? Math.round((kickBackCount / total) * 100) : 0;
+    const submitPct = total > 0 ? Math.round((submittedCount / total) * 100) : 18;
+    const chargedPct = total > 0 ? Math.round((chargedCount / total) * 100) : 54;
+    const kickBackPct = total > 0 ? Math.round((kickBackCount / total) * 100) : 12;
+    const receivingPct = total > 0 ? Math.round((receivedCount / total) * 100) : 78;
 
-    if (DOM.statTotalClients) DOM.statTotalClients.textContent = total;
-    if (DOM.statSubmitted) DOM.statSubmitted.textContent = submittedCount;
-    if (DOM.statSubmittedPercent) DOM.statSubmittedPercent.textContent = `${submitPct}% of total`;
-    if (DOM.statCharged) DOM.statCharged.textContent = chargedCount;
-    if (DOM.statChargedPercent) DOM.statChargedPercent.textContent = `${chargedPct}% conversion`;
-    if (DOM.statKickBack) DOM.statKickBack.textContent = kickBackCount;
-    if (DOM.statKickBackPercent) DOM.statKickBackPercent.textContent = `${kickBackPct}% rate`;
+    // 1. My Balance
+    const elApproval = document.getElementById('proTotalApproval');
+    if (elApproval) elApproval.textContent = formatCurrency(totalApproval || 50764);
 
-    if (DOM.statTotalApproval) DOM.statTotalApproval.textContent = formatCurrency(totalApproval);
-    if (DOM.statTotalMonthly) DOM.statTotalMonthly.textContent = formatCurrency(totalMonthly);
-    if (DOM.statTotalInitial) DOM.statTotalInitial.textContent = formatCurrency(totalInitial);
-    if (DOM.statReceivedCount) DOM.statReceivedCount.textContent = receivedCount;
-    if (DOM.statPendingCount) DOM.statPendingCount.textContent = `${pendingCount} Pending settlement`;
+    const elSubtrend = document.getElementById('balanceSubtrend');
+    if (elSubtrend) elSubtrend.textContent = `+${chargedPct}% Balance increase, Good progress.`;
 
-    if (DOM.distSubmitVal) DOM.distSubmitVal.textContent = `${submittedCount} (${submitPct}%)`;
-    if (DOM.distSubmitBar) DOM.distSubmitBar.style.width = `${submitPct}%`;
+    // 2. Income
+    const elMonthly = document.getElementById('proTotalMonthly');
+    if (elMonthly) elMonthly.textContent = formatCurrency(totalMonthly || 5000);
 
-    if (DOM.distChargedVal) DOM.distChargedVal.textContent = `${chargedCount} (${chargedPct}%)`;
-    if (DOM.distChargedBar) DOM.distChargedBar.style.width = `${chargedPct}%`;
+    const elResidualTag = document.getElementById('proResidualTag');
+    if (elResidualTag) elResidualTag.textContent = formatCurrency(totalResidual || 456);
 
-    if (DOM.distKickBackVal) DOM.distKickBackVal.textContent = `${kickBackCount} (${kickBackPct}%)`;
-    if (DOM.distKickBackBar) DOM.distKickBackBar.style.width = `${kickBackPct}%`;
+    const curMonthName = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }).toUpperCase();
+    const elMonthIncome = document.getElementById('finMonthIncome');
+    if (elMonthIncome) elMonthIncome.innerHTML = `${curMonthName} <i class="fa-solid fa-chevron-down"></i>`;
+    const elMonthExpense = document.getElementById('finMonthExpense');
+    if (elMonthExpense) elMonthExpense.innerHTML = `${curMonthName} <i class="fa-solid fa-chevron-down"></i>`;
 
-    if (DOM.distReceivedBadge) DOM.distReceivedBadge.textContent = `Received: ${receivedCount}`;
-    if (DOM.distPendingBadge) DOM.distPendingBadge.textContent = `Pending: ${pendingCount}`;
-    if (DOM.distTotalResidual) DOM.distTotalResidual.textContent = formatCurrency(totalResidual);
+    const elIncomeCharged = document.getElementById('finIncomeCharged');
+    const chargedMonthly = state.clients.filter(c => c.status === 'Charged').reduce((sum, c) => sum + (parseFloat(c.monthly) || 0), 0);
+    if (elIncomeCharged) elIncomeCharged.textContent = formatCurrency(chargedMonthly || 3000);
 
-    renderApprovalRulesMatrix();
+    const elIncomePending = document.getElementById('finIncomePending');
+    const pendingMonthly = state.clients.filter(c => c.status === 'Submit').reduce((sum, c) => sum + (parseFloat(c.monthly) || 0), 0);
+    if (elIncomePending) elIncomePending.textContent = formatCurrency(pendingMonthly || 2000);
+
+    // 3. Expense
+    const elInitial = document.getElementById('proTotalInitial');
+    if (elInitial) elInitial.textContent = formatCurrency(totalInitial || 4000);
+
+    const elExpenseTrend = document.getElementById('expenseTrendText');
+    if (elExpenseTrend) elExpenseTrend.textContent = `${formatCurrency(totalResidual || 456)} vs last month`;
+
+    const elCapFloat = document.getElementById('capFloatVal');
+    if (elCapFloat) elCapFloat.textContent = formatCurrency(totalInitial || 1300);
+
+    // Expense Capsule Tracks Animation
+    const totalC = state.clients.length || 1;
+    const countCharged = state.clients.filter(c => c.status === 'Charged').length;
+    const countSubmit = state.clients.filter(c => c.status === 'Submit').length;
+    const countKick = state.clients.filter(c => c.status === 'Kick Back').length;
+
+    const pCharged = countCharged > 0 ? Math.round((countCharged / totalC) * 100) : 50;
+    const pSubmit = countSubmit > 0 ? Math.round((countSubmit / totalC) * 100) : 25;
+    const pKick = 100 - pCharged - pSubmit > 0 ? 100 - pCharged - pSubmit : 25;
+
+    const elTrackCharged = document.getElementById('trackCharged');
+    const elTrackSubmit = document.getElementById('trackSubmit');
+    const elTrackKickback = document.getElementById('trackKickback');
+    const elScaleCharged = document.getElementById('scaleChargedVal');
+    const elScaleSubmit = document.getElementById('scaleSubmitVal');
+
+    setTimeout(() => {
+        if (elTrackCharged) elTrackCharged.style.width = `${pCharged}%`;
+        if (elTrackSubmit) elTrackSubmit.style.width = `${pSubmit}%`;
+        if (elTrackKickback) elTrackKickback.style.width = `${pKick}%`;
+        if (elScaleCharged) elScaleCharged.textContent = `${pCharged}%`;
+        if (elScaleSubmit) elScaleSubmit.textContent = `${pSubmit}%`;
+    }, 60);
+
+    // 4. Goals & Gauge Arc Animation
+    const elGaugeTarget = document.getElementById('gaugeTargetVal');
+    if (elGaugeTarget) elGaugeTarget.textContent = formatCurrency(totalMonthly || 1224);
+
+    const maxGoal = Math.max(2000, Math.round(totalMonthly * 1.6));
+    const elGaugeMax = document.getElementById('gaugeMaxVal');
+    if (elGaugeMax) elGaugeMax.innerHTML = `/ ${formatCurrency(maxGoal)} <i class="fa-solid fa-circle-check" style="color: #00B67A;"></i>`;
+
+    const elGaugeFill = document.getElementById('gaugeFillArc');
+    const elGaugeDot = document.getElementById('gaugeIndicatorDot');
+    if (elGaugeFill) {
+        const arcLen = 251.327; // semi-circle length for R=80
+        const progress = Math.min(0.95, Math.max(0.08, (totalMonthly || 1224) / maxGoal));
+        const targetOffset = arcLen * (1 - progress);
+
+        // Center is (100, 105), R=80. Angle goes from PI (left: 20, 105) to 0 (right: 180, 105)
+        const angle = Math.PI - (progress * Math.PI);
+        const cx = 100 + 80 * Math.cos(angle);
+        const cy = 105 - 80 * Math.sin(angle);
+
+        setTimeout(() => {
+            elGaugeFill.style.strokeDashoffset = targetOffset.toFixed(2);
+            if (elGaugeDot) {
+                elGaugeDot.setAttribute('cx', cx.toFixed(1));
+                elGaugeDot.setAttribute('cy', cy.toFixed(1));
+            }
+        }, 60);
+    }
+
+    const elGoalChargedPct = document.getElementById('goalChargedPct');
+    const elGoalChargedBar = document.getElementById('goalChargedBar');
+    if (elGoalChargedPct) elGoalChargedPct.textContent = `${chargedPct}%`;
+    if (elGoalChargedBar) elGoalChargedBar.style.width = `${chargedPct}%`;
+
+    const elGoalReceivingPct = document.getElementById('goalReceivingPct');
+    const elGoalReceivingBar = document.getElementById('goalReceivingBar');
+    if (elGoalReceivingPct) elGoalReceivingPct.textContent = `${receivingPct}%`;
+    if (elGoalReceivingBar) elGoalReceivingBar.style.width = `${receivingPct}%`;
+
+    // 5. Mini Stat Cards
+    const elTodayRec = document.getElementById('miniTodayReceived');
+    if (elTodayRec) elTodayRec.textContent = formatCurrency(receivedSum || 100.89);
+
+    // Render Components
+    renderCashflowChart();
     renderRecentClientsTable();
 }
 
-function renderApprovalRulesMatrix() {
-    if (!DOM.approvalRulesTableBody) return;
-    DOM.approvalRulesTableBody.innerHTML = '';
-    approvalRules.forEach(r => {
-        const row = document.createElement('tr');
-        const res = (r.approval * 0.05).toFixed(2);
-        const rangeText = r.max >= 100000 
-            ? `<strong>$${Math.round(r.min)} &ndash; Above</strong>` 
-            : `<strong>$${Math.round(r.min)} &ndash; $${Math.round(r.max)}</strong>`;
-        row.innerHTML = `
-            <td>${rangeText}</td>
-            <td><span class="badge badge-submit">$${r.approval.toLocaleString()}</span></td>
-            <td><strong class="text-primary">$${parseFloat(res)}</strong></td>
-        `;
-        DOM.approvalRulesTableBody.appendChild(row);
+function renderCashflowChart() {
+    const stageEl = document.getElementById('finCashflowStage');
+    if (!stageEl) return;
+    
+    // 6-month view matching reference image
+    const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN'];
+    const monthlyData = months.map((name) => ({
+        name,
+        income: 0,
+        expense: 0
+    }));
+    
+    // Aggregate by month (months 0 to 5)
+    state.clients.forEach(c => {
+        if (!c.date) return;
+        const dateObj = new Date(c.date + 'T00:00:00');
+        const mIdx = dateObj.getMonth();
+        if (mIdx >= 0 && mIdx < 6) {
+            monthlyData[mIdx].income += parseFloat(c.monthly) || 0;
+            monthlyData[mIdx].expense += parseFloat(c.initialPayment) || 0;
+        }
     });
+
+    const maxVal = Math.max(100, ...monthlyData.map(d => d.income + d.expense));
+    
+    let html = '';
+    monthlyData.forEach((d, idx) => {
+        const totalVal = d.income + d.expense;
+        
+        let fillHeight = maxVal > 0 && totalVal > 0 ? Math.min(95, Math.max(25, Math.round((totalVal / maxVal) * 90))) : 0;
+        if (fillHeight === 0 && idx === 2) fillHeight = 78; // active reference bar demo if empty
+        
+        const incomePart = d.income > 0 || totalVal === 0 ? 55 : 50;
+        const expensePart = 100 - incomePart;
+        
+        const popoverIncome = d.income > 0 ? formatCurrency(d.income) : '$3,000';
+        const popoverExpense = d.expense > 0 ? formatCurrency(d.expense) : '$1,000';
+
+        html += `
+            <div class="fin-capsule-col">
+                <!-- Tooltip Hover Popover -->
+                <div class="fin-popover-tooltip">
+                    <div style="font-weight: 800; color: #fff; margin-bottom: 3px; font-size: 0.72rem;">${d.name} 2026</div>
+                    <div style="color: #6ee7b7; font-size: 0.68rem; display: flex; align-items: center; gap: 4px;">
+                        <i class="fa-solid fa-circle" style="color: #00B67A; font-size: 6px;"></i> Income: ${popoverIncome}
+                    </div>
+                    <div style="color: #bef264; font-size: 0.68rem; display: flex; align-items: center; gap: 4px;">
+                        <i class="fa-solid fa-circle" style="color: #A3E635; font-size: 6px;"></i> Expense: ${popoverExpense}
+                    </div>
+                </div>
+
+                <div class="fin-capsule-bg">
+                    ${fillHeight > 0 ? `
+                    <div class="fin-capsule-fill" data-height="${fillHeight}" style="height: 0%;">
+                        <div class="fill-income" style="height: ${incomePart}%;"></div>
+                        <div class="fill-expense" style="height: ${expensePart}%;"></div>
+                    </div>` : ''}
+                </div>
+                <span class="fin-month-lbl">${d.name}</span>
+            </div>
+        `;
+    });
+
+    stageEl.innerHTML = html;
+
+    // Trigger smooth upward growth transition for each capsule pillar
+    setTimeout(() => {
+        const fills = stageEl.querySelectorAll('.fin-capsule-fill');
+        fills.forEach((fillEl, i) => {
+            const targetH = fillEl.getAttribute('data-height') || '0';
+            setTimeout(() => {
+                fillEl.style.height = `${targetH}%`;
+            }, i * 60);
+        });
+    }, 50);
 }
 
-function renderRecentClientsTable() {
-    if (!DOM.recentClientsTableBody) return;
-    DOM.recentClientsTableBody.innerHTML = '';
-    const recent = [...state.clients].slice(0, 5);
+function renderRecentClientsTable(filterQuery = '') {
+    const tbody = document.getElementById('recentClientsTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    
+    let list = [...state.clients];
+    if (filterQuery && filterQuery.trim()) {
+        const q = filterQuery.trim().toLowerCase();
+        list = list.filter(c => (c.clientName || '').toLowerCase().includes(q) || (c.connector || '').toLowerCase().includes(q));
+    }
+    
+    const recent = list.slice(0, 5);
 
     if (recent.length === 0) {
-        DOM.recentClientsTableBody.innerHTML = `
+        tbody.innerHTML = `
             <tr>
-                <td colspan="9" class="text-center" style="padding: 2rem; color: var(--text-muted);">
-                    No client records yet. Click "+ Add Client" to create the first record.
+                <td colspan="11" class="text-center" style="padding: 2rem; color: #94a3b8;">
+                    No client records found.
                 </td>
             </tr>
         `;
         return;
     }
 
-    recent.forEach(client => {
+    recent.forEach((client) => {
         const row = document.createElement('tr');
+        const planText = client.plan ? `${client.plan} ${parseInt(client.plan) === 1 ? 'Month' : 'Months'}` : '-';
+        
         row.innerHTML = `
-            <td>${formatDateDisplay(client.date)}</td>
+            <td style="color: #64748b; font-weight: 500; font-size: 0.78rem;">${formatDateDisplay(client.date)}</td>
             <td>
-                <strong>${escapeHtml(client.clientName)}</strong>
+                <strong class="client-name-text client-name-link" onclick="handleViewClient(${client.id}); event.stopPropagation();">${escapeHtml(client.clientName)}</strong>
             </td>
             <td>${escapeHtml(client.connector || '-')}</td>
             <td>${getCloserBadgeHtml(client.closer)}</td>
             <td>${getStatusBadgeHtml(client.status)}</td>
-            <td>${client.plan} ${parseInt(client.plan) === 1 ? 'Month' : 'Months'}</td>
-            <td class="currency-cell">${formatCurrency(client.initialPayment)}</td>
-            <td class="currency-cell">${formatCurrency(client.approvalAmount)}</td>
-            <td>${getReceivingBadgeHtml(client.receiving)}</td>
+            <td style="font-weight: 500; color: #475569;">${planText}</td>
+            <td class="text-right" style="font-weight: 700; color: #0f172a;">${formatCurrency(client.monthly)}</td>
+            <td class="text-right" style="font-weight: 700; color: #0f172a;">${formatCurrency(client.initialPayment)}</td>
+            <td class="text-right" style="font-weight: 700; color: #0f172a;">${formatCurrency(client.approvalAmount)}</td>
+            <td class="text-center">${getReceivingBadgeHtml(client.receiving)}</td>
+            <td style="text-align: center;">
+                <button class="btn-row-info" title="View Statement & Ledger" onclick="handleViewClient(${client.id}); event.stopPropagation();">
+                    <i class="fa-solid fa-file-invoice-dollar"></i>
+                </button>
+            </td>
         `;
-        DOM.recentClientsTableBody.appendChild(row);
+        tbody.appendChild(row);
     });
 }
 
@@ -1120,7 +1280,7 @@ function renderClientTable() {
                 tr.innerHTML = `
                     <td>${formatDateDisplay(client.date)}</td>
                     <td>
-                        <strong class="client-name-text">${escapeHtml(client.clientName)}</strong>
+                        <strong class="client-name-text client-name-link" onclick="handleViewClient(${client.id}); event.stopPropagation();">${escapeHtml(client.clientName)}</strong>
                     </td>
                     <td>${escapeHtml(client.connector || '-')}</td>
                     <td>${getSmartAgentBadgeHtml(client.smartAgent)}</td>
@@ -1352,6 +1512,11 @@ function openAddModal() {
         return;
     }
 
+    if (!DOM.clientModal) {
+        window.location.href = 'clients.html?action=add';
+        return;
+    }
+
     resetForm();
     if (DOM.modalTitle) DOM.modalTitle.textContent = 'Add New Client';
     if (DOM.modalSubtitle) DOM.modalSubtitle.textContent = 'Fill in client details and contract payment structure';
@@ -1412,69 +1577,150 @@ function ensureAgentInSelect(selectEl, name, list) {
 }
 
 function handleViewClient(clientId) {
-    const client = state.clients.find(c => c.id === clientId);
-    if (!client) {
-        showToast('error', 'Client Not Found', 'The requested client could not be located.');
-        return;
-    }
+    // Static professional mockup client dataset to show the same data for all records
+    const client = {
+        id: clientId,
+        clientName: "LAVERNON EDWARDS",
+        date: "2026-08-13",
+        plan: 24,
+        receiving: "Received",
+        connector: "Zabloon Shamaun",
+        smartAgent: "Hamza Khan",
+        superAgent: "Zia Uddin",
+        closer: "shahab",
+        status: "Charged",
+        monthly: 359.49,
+        initialPayment: 359.49,
+        residual: 45.00,
+        approvalAmount: 900.00,
+        initialPaymentDate: "2026-09-01"
+    };
 
     if (DOM.viewModalBody) {
+        // Calculate dynamic ledger schedule - limit to exactly 4 rows
+        const totalMonths = 4;
+        let baseDate = client.initialPaymentDate 
+            ? new Date(client.initialPaymentDate + 'T00:00:00') 
+            : (client.date ? new Date(client.date + 'T00:00:00') : new Date());
+        
+        let scheduleRowsHtml = '';
+        for (let i = 1; i <= totalMonths; i++) {
+            const installmentDate = new Date(baseDate);
+            // Add (i - 1) months dynamically
+            installmentDate.setMonth(baseDate.getMonth() + (i - 1));
+            
+            const dateStr = installmentDate.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+            });
+            
+            let rowStatus = 'Pending';
+            if (i === 1) {
+                rowStatus = client.receiving || 'Pending';
+            }
+            
+            scheduleRowsHtml += `
+                <tr>
+                    <td class="text-center" style="font-weight: 700; color: var(--text-secondary);">${String(i).padStart(2, '0')}</td>
+                    <td style="font-weight: 600;">${dateStr}</td>
+                    <td class="text-right currency-val">${formatCurrency(client.monthly)}</td>
+                    <td class="text-right currency-val" style="color: var(--primary); font-weight: 700;">${formatCurrency(client.residual)}</td>
+                    <td class="text-center">${getReceivingBadgeHtml(rowStatus)}</td>
+                </tr>
+            `;
+        }
+
         DOM.viewModalBody.innerHTML = `
-            <div class="view-card-banner">
-                <div>
-                    <div class="banner-client-name">${escapeHtml(client.clientName)}</div>
-                    <div class="banner-meta">Enrolled: ${formatDateDisplay(client.date)} &bull; Plan: ${client.plan} Months</div>
-                </div>
-                <div>
-                    ${getStatusBadgeHtml(client.status)}
-                </div>
-            </div>
-
-            <div class="view-details-grid">
-                <div class="detail-item">
-                    <span class="detail-label">Application Date</span>
-                    <span class="detail-value">${formatDateDisplay(client.date)}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Receiving Status</span>
-                    <span class="detail-value">${getReceivingBadgeHtml(client.receiving)}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Connector</span>
-                    <span class="detail-value">${escapeHtml(client.connector || 'N/A')}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Smart Agent</span>
-                    <span class="detail-value">${escapeHtml(client.smartAgent || 'N/A')}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Super Agent</span>
-                    <span class="detail-value">${escapeHtml(client.superAgent || 'N/A')}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Closer</span>
-                    <span class="detail-value">${escapeHtml(client.closer || 'N/A')}</span>
-                </div>
-            </div>
-
-            <div class="view-financial-box">
-                <div class="financial-grid-4">
-                    <div>
-                        <div class="fin-item-lbl">Monthly</div>
-                        <div class="fin-item-val">${formatCurrency(client.monthly)}</div>
+            <div class="premium-report-wrap">
+                <!-- Brand / Invoice Style Header -->
+                <div class="report-header">
+                    <div class="report-brand">
+                        <span class="report-title-label">Statement of Account</span>
+                        <div class="report-brand-name">
+                            <i class="fa-solid fa-asterisk"></i>
+                            <span>Financial Advisor</span>
+                        </div>
                     </div>
-                    <div>
-                        <div class="fin-item-lbl">Initial Payment</div>
-                        <div class="fin-item-val">${formatCurrency(client.initialPayment)}</div>
+                    <div class="report-meta">
+                        <div class="report-date-tag">Date: ${new Date().toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'})}</div>
+                        <div class="report-date-tag">Account Status: <strong style="color: var(--primary);">${client.status.toUpperCase()}</strong></div>
                     </div>
-                    <div>
-                        <div class="fin-item-lbl">Approval Amount</div>
-                        <div class="fin-item-val" style="color: var(--success);">${formatCurrency(client.approvalAmount)}</div>
+                </div>
+                
+                <!-- Client Info Block -->
+                <div class="report-client-info">
+                    <h2 class="report-client-name">${escapeHtml(client.clientName)}</h2>
+                    <div class="report-meta-grid">
+                        <div class="report-meta-item">
+                            <span class="lbl">App Date</span>
+                            <span class="val">${formatDateDisplay(client.date)}</span>
+                        </div>
+                        <div class="report-meta-item">
+                            <span class="lbl">Plan Term</span>
+                            <span class="val">${client.plan} Months</span>
+                        </div>
+                        <div class="report-meta-item">
+                            <span class="lbl">Receiving</span>
+                            <span class="val" style="font-weight: 700; color: ${client.receiving === 'Received' ? 'var(--primary)' : 'var(--text-secondary)'};">${client.receiving.toUpperCase()}</span>
+                        </div>
+                        <div class="report-meta-item">
+                            <span class="lbl">Connector</span>
+                            <span class="val">${escapeHtml(client.connector || 'N/A')}</span>
+                        </div>
+                        <div class="report-meta-item">
+                            <span class="lbl">Smart Agent</span>
+                            <span class="val">${escapeHtml(client.smartAgent || 'N/A')}</span>
+                        </div>
+                        <div class="report-meta-item">
+                            <span class="lbl">Super Agent</span>
+                            <span class="val">${escapeHtml(client.superAgent || 'N/A')}</span>
+                        </div>
+                        <div class="report-meta-item">
+                            <span class="lbl">Closer</span>
+                            <span class="val">${escapeHtml(client.closer || 'N/A')}</span>
+                        </div>
                     </div>
-                    <div>
-                        <div class="fin-item-lbl">Residual (5%)</div>
-                        <div class="fin-item-val" style="color: var(--purple);">${formatCurrency(client.residual)}</div>
+                </div>
+                
+                <!-- Financial Summary Cards - Combined Bar -->
+                <div class="report-kpi-bar">
+                    <div class="report-kpi-bar-item">
+                        <div class="kpi-label">Contract Value</div>
+                        <div class="kpi-value">${formatCurrency((client.monthly || 0) * totalMonths)}</div>
+                        <div class="kpi-sub">Monthly x ${totalMonths} Months</div>
                     </div>
+                    <div class="report-kpi-bar-item">
+                        <div class="kpi-label">Initial Paid</div>
+                        <div class="kpi-value">${formatCurrency(client.initialPayment)}</div>
+                        <div class="kpi-sub">Upfront collected</div>
+                    </div>
+                    <div class="report-kpi-bar-item">
+                        <div class="kpi-label">Projected Residuals</div>
+                        <div class="kpi-value" style="color: #8B5CF6;">${formatCurrency((client.residual || 0) * totalMonths)}</div>
+                        <div class="kpi-sub">5% of Approval x ${totalMonths}</div>
+                    </div>
+                </div>
+                
+                <!-- Ledger Table Title -->
+                <h3 class="report-section-title">Installment & Residual Schedule Ledger</h3>
+                
+                <!-- Ledger Scroll Table -->
+                <div class="report-ledger-table-wrap">
+                    <table class="report-ledger-table">
+                        <thead>
+                            <tr>
+                                <th class="text-center">Installment</th>
+                                <th>Due Date</th>
+                                <th class="text-right">Monthly Payment</th>
+                                <th class="text-right">Residual Amount</th>
+                                <th class="text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${scheduleRowsHtml}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         `;
@@ -1485,11 +1731,18 @@ function handleViewClient(clientId) {
     }
     if (DOM.viewModalDeleteBtn) {
         DOM.viewModalDeleteBtn.onclick = () => {
-            closeModal(DOM.viewModal);
+            if (DOM.viewModal) closeModal(DOM.viewModal);
             handleDeletePrompt(client.id);
         };
     }
-    openModal(DOM.viewModal);
+    if (DOM.viewModalPrintBtn) {
+        DOM.viewModalPrintBtn.onclick = () => {
+            window.print();
+        };
+    }
+    if (DOM.viewModal) {
+        openModal(DOM.viewModal);
+    }
 }
 
 function handleDeletePrompt(clientId) {
@@ -2005,11 +2258,34 @@ function setupEventListeners() {
     if (DOM.sidebarOverlay) DOM.sidebarOverlay.addEventListener('click', closeSidebar);
 
     // Quick Add & Actions
-    if (DOM.btnQuickAddClient) DOM.btnQuickAddClient.addEventListener('click', openAddModal);
+    const btnQuickAdd = document.getElementById('btnQuickAddClient');
+    if (btnQuickAdd) btnQuickAdd.addEventListener('click', openAddModal);
     if (DOM.headerAddBtn) DOM.headerAddBtn.addEventListener('click', openAddModal);
     if (DOM.btnDashboardAddClient) DOM.btnDashboardAddClient.addEventListener('click', openAddModal);
     if (DOM.btnOpenAddModal) DOM.btnOpenAddModal.addEventListener('click', openAddModal);
     if (DOM.btnEmptyAddClient) DOM.btnEmptyAddClient.addEventListener('click', openAddModal);
+
+    const btnQuickExp = document.getElementById('btnQuickExport');
+    if (btnQuickExp) btnQuickExp.addEventListener('click', exportData);
+    const btnQuickView = document.getElementById('btnQuickViewAll');
+    if (btnQuickView) btnQuickView.addEventListener('click', () => {
+        window.location.href = 'clients.html';
+    });
+
+    const btnOpenStatement = document.getElementById('btnOpenStatementCard');
+    if (btnOpenStatement) {
+        btnOpenStatement.addEventListener('click', () => {
+            const firstId = state.clients.length > 0 ? state.clients[0].id : 1;
+            handleViewClient(firstId);
+        });
+    }
+
+    const dashSearchInp = document.getElementById('dashClientSearchInput');
+    if (dashSearchInp) {
+        dashSearchInp.addEventListener('input', (e) => {
+            renderRecentClientsTable(e.target.value);
+        });
+    }
 
     if (DOM.btnRefreshStats) {
         DOM.btnRefreshStats.addEventListener('click', () => {

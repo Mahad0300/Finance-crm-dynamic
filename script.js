@@ -1838,14 +1838,29 @@ document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
     });
 });
 
-function toggleMobileSidebar() {
-    if (DOM.sidebar) DOM.sidebar.classList.toggle('open');
-    if (DOM.sidebarOverlay) DOM.sidebarOverlay.classList.toggle('open');
+function toggleSidebar() {
+    if (!DOM.sidebar) return;
+    const isMobile = window.innerWidth <= 860;
+    if (isMobile) {
+        DOM.sidebar.classList.toggle('open');
+        if (DOM.sidebarOverlay) DOM.sidebarOverlay.classList.toggle('open');
+    } else {
+        DOM.sidebar.classList.toggle('collapsed');
+        const isCollapsed = DOM.sidebar.classList.contains('collapsed');
+        localStorage.setItem('crm_sidebar_collapsed', isCollapsed ? '1' : '0');
+    }
 }
 
-function closeMobileSidebar() {
-    if (DOM.sidebar) DOM.sidebar.classList.remove('open');
-    if (DOM.sidebarOverlay) DOM.sidebarOverlay.classList.remove('open');
+function closeSidebar() {
+    if (!DOM.sidebar) return;
+    const isMobile = window.innerWidth <= 860;
+    if (isMobile) {
+        DOM.sidebar.classList.remove('open');
+        if (DOM.sidebarOverlay) DOM.sidebarOverlay.classList.remove('open');
+    } else {
+        DOM.sidebar.classList.add('collapsed');
+        localStorage.setItem('crm_sidebar_collapsed', '1');
+    }
 }
 
 // ============================================================================
@@ -1984,10 +1999,10 @@ function resetSampleData() {
 // ============================================================================
 
 function setupEventListeners() {
-    // Mobile Sidebar
-    if (DOM.mobileToggleBtn) DOM.mobileToggleBtn.addEventListener('click', toggleMobileSidebar);
-    if (DOM.sidebarCloseBtn) DOM.sidebarCloseBtn.addEventListener('click', closeMobileSidebar);
-    if (DOM.sidebarOverlay) DOM.sidebarOverlay.addEventListener('click', closeMobileSidebar);
+    // Sidebar Toggle (Desktop, Laptop & Mobile)
+    if (DOM.mobileToggleBtn) DOM.mobileToggleBtn.addEventListener('click', toggleSidebar);
+    if (DOM.sidebarCloseBtn) DOM.sidebarCloseBtn.addEventListener('click', closeSidebar);
+    if (DOM.sidebarOverlay) DOM.sidebarOverlay.addEventListener('click', closeSidebar);
 
     // Quick Add & Actions
     if (DOM.btnQuickAddClient) DOM.btnQuickAddClient.addEventListener('click', openAddModal);
@@ -2290,6 +2305,11 @@ document.addEventListener('DOMContentLoaded', () => {
     populateSelectOptions();
     updateNavBadgeCount();
     setupEventListeners();
+
+    // Restore saved sidebar collapsed state on desktop/laptop
+    if (window.innerWidth > 860 && localStorage.getItem('crm_sidebar_collapsed') === '1') {
+        if (DOM.sidebar) DOM.sidebar.classList.add('collapsed');
+    }
 
     // Render corresponding page content
     if (DOM.viewDashboard) {

@@ -214,7 +214,6 @@ select::-webkit-scrollbar {
     display: flex;
     align-items: center;
     padding: 0 1.25rem;
-    border-bottom: 1px solid var(--sidebar-border);
     flex-shrink: 0;
 }
 
@@ -526,11 +525,13 @@ select::-webkit-scrollbar {
 
 .page-content {
     flex: 1;
-    padding: 1.5rem 2rem 2.5rem;
+    padding: 1.25rem 2rem 1.25rem;
     min-width: 0;
     width: 100%;
     overflow-y: auto;
     overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
 .view-section {
@@ -540,6 +541,14 @@ select::-webkit-scrollbar {
 
 .view-section.active {
     display: block;
+}
+
+#viewClients.active {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    height: 100%;
 }
 
 .page-header-row {
@@ -921,6 +930,10 @@ select::-webkit-scrollbar {
 
 .table-outer-wrapper {
     width: 100%;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
     border: 1px solid var(--sidebar-border);
     border-radius: var(--radius-lg);
     background-color: #FFFFFF;
@@ -929,8 +942,10 @@ select::-webkit-scrollbar {
 
 .table-scroll-container {
     width: 100%;
+    flex: 1;
+    min-height: 0;
     overflow-x: auto;
-    overflow-y: visible;
+    overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: #CBD5E1 #F9FAFB;
 }

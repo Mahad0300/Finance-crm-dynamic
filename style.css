@@ -2316,6 +2316,237 @@ select::-webkit-scrollbar {
     gap: 0.4rem;
 }
 
+/* ==========================================================================
+   DASHBOARD DATE / MONTH RANGE FILTER COMPONENT
+   ========================================================================== */
+
+.dash-date-filter-wrap {
+    position: relative;
+    display: inline-block;
+}
+
+.btn-dash-date-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    height: 38px;
+    padding: 0 0.95rem;
+    background-color: #FFFFFF;
+    border: 1.5px solid var(--sidebar-border);
+    border-radius: var(--radius-md);
+    font-size: 0.82rem;
+    font-weight: 600;
+    font-family: inherit;
+    color: var(--text-main);
+    cursor: pointer;
+    transition: var(--transition-fast);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.btn-dash-date-trigger:hover,
+.dash-date-filter-wrap.active .btn-dash-date-trigger {
+    border-color: var(--primary);
+    color: var(--primary);
+    background-color: #FAFCFA;
+}
+
+.btn-dash-date-trigger i.fa-calendar-days {
+    color: var(--primary);
+    font-size: 0.9rem;
+}
+
+.btn-dash-date-trigger .caret-icon {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    transition: transform 0.2s ease;
+    margin-left: 0.15rem;
+}
+
+.dash-date-filter-wrap.active .caret-icon {
+    transform: rotate(180deg);
+}
+
+/* Popover */
+.dash-date-popover {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 390px;
+    max-width: calc(100vw - 2rem);
+    background: #FFFFFF;
+    border: 1px solid var(--sidebar-border);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 12px 30px -4px rgba(15, 23, 42, 0.15), 0 4px 12px -2px rgba(15, 23, 42, 0.08);
+    padding: 1.15rem;
+    z-index: 100;
+    display: none;
+    flex-direction: column;
+    gap: 0.95rem;
+    animation: dropdownFadeIn 0.15s ease-out;
+}
+
+.dash-date-filter-wrap.active .dash-date-popover {
+    display: flex;
+}
+
+.date-popover-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #F1F5F9;
+}
+
+.date-popover-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.date-popover-reset {
+    background: transparent;
+    border: none;
+    color: var(--primary);
+    font-size: 0.76rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.date-popover-reset:hover {
+    text-decoration: underline;
+}
+
+/* Tabs */
+.date-mode-tabs {
+    display: flex;
+    background-color: #F1F5F9;
+    border-radius: var(--radius-sm);
+    padding: 3px;
+    gap: 3px;
+}
+
+.date-tab-btn {
+    flex: 1;
+    padding: 0.4rem 0.4rem;
+    font-size: 0.76rem;
+    font-weight: 600;
+    font-family: inherit;
+    color: var(--text-muted);
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.date-tab-btn:hover {
+    color: var(--text-main);
+}
+
+.date-tab-btn.active {
+    background-color: #FFFFFF;
+    color: var(--primary);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* Panes */
+.date-tab-pane {
+    display: none;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.date-tab-pane.active {
+    display: flex;
+}
+
+.date-pane-label {
+    font-size: 0.74rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.date-picker-input {
+    width: 100%;
+    height: 38px;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    font-family: inherit;
+    color: var(--text-main);
+    background-color: #FAFCFA;
+    border: 1.5px solid var(--sidebar-border);
+    border-radius: var(--radius-sm);
+    outline: none;
+    box-sizing: border-box;
+    transition: var(--transition-fast);
+}
+
+.date-picker-input:focus {
+    border-color: var(--primary);
+    background-color: #FFFFFF;
+    box-shadow: 0 0 0 2px rgba(0, 182, 122, 0.15);
+}
+
+.range-inputs-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    width: 100%;
+}
+
+.range-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 0;
+}
+
+.date-popover-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    padding-top: 0.65rem;
+    border-top: 1px solid #F1F5F9;
+}
+
+.btn-date-cancel {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: #F1F5F9;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.btn-date-cancel:hover {
+    background: #E2E8F0;
+    color: var(--text-main);
+}
+
+.btn-date-apply {
+    padding: 0.4rem 0.9rem;
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: #FFFFFF;
+    background: var(--primary);
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.btn-date-apply:hover {
+    background: var(--primary-dark, #009664);
+}
+
 /* Dashboard 2-Column Section */
 .dashboard-grid-2col {
     display: grid;
@@ -3705,15 +3936,16 @@ select::-webkit-scrollbar {
 }
 
 .perf-lead-badge {
-    font-size: 0.72rem;
-    font-weight: 600;
+    font-size: 0.76rem;
+    font-weight: 700;
     color: #00B67A;
     background: #E8F8F0;
-    padding: 0.2rem 0.55rem;
+    padding: 0.2rem 0.65rem;
     border-radius: 8px;
     display: inline-flex;
     align-items: center;
-    gap: 0.25rem;
+    justify-content: center;
+    min-width: 28px;
     white-space: nowrap;
 }
 

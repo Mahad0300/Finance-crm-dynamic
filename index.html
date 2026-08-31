@@ -84,10 +84,56 @@
                         </div>
 
                         <div class="header-action-buttons">
-                            <button class="btn-header-export" id="btnExportHeader">
-                                <i class="fa-solid fa-arrow-up-from-bracket"></i>
-                                <span>Export</span>
-                            </button>
+                            <!-- Flexible Date / Month Range Filter Component -->
+                            <div class="dash-date-filter-wrap" id="dashDateFilterWrap">
+                                <button type="button" class="btn-dash-date-trigger" id="dashDateTriggerBtn" aria-expanded="false" aria-haspopup="true">
+                                    <i class="fa-regular fa-calendar-days"></i>
+                                    <span id="dashDateLabel">All Time</span>
+                                    <i class="fa-solid fa-chevron-down caret-icon"></i>
+                                </button>
+
+                                <!-- Date Filter Popover -->
+                                <div class="dash-date-popover" id="dashDatePopover">
+                                    <div class="date-popover-header">
+                                        <span class="date-popover-title">Date & Month Filter</span>
+                                        <button type="button" class="date-popover-reset" id="dashDateResetBtn">Reset</button>
+                                    </div>
+
+                                    <!-- Mode Switcher Tabs -->
+                                    <div class="date-mode-tabs">
+                                        <button type="button" class="date-tab-btn active" data-mode="all">All Time</button>
+                                        <button type="button" class="date-tab-btn" data-mode="single-month">Single Month</button>
+                                        <button type="button" class="date-tab-btn" data-mode="month-range">Month Range</button>
+                                    </div>
+
+                                    <!-- Pane 1: Single Month -->
+                                    <div class="date-tab-pane" id="paneSingleMonth">
+                                        <label class="date-pane-label" for="inputSingleMonth">Select Month</label>
+                                        <input type="month" class="date-picker-input" id="inputSingleMonth">
+                                    </div>
+
+                                    <!-- Pane 2: Month Range -->
+                                    <div class="date-tab-pane" id="paneMonthRange">
+                                        <div class="range-inputs-row">
+                                            <div class="range-input-group">
+                                                <label class="date-pane-label" for="inputRangeFrom">From Month</label>
+                                                <input type="month" class="date-picker-input" id="inputRangeFrom">
+                                            </div>
+                                            <div class="range-input-group">
+                                                <label class="date-pane-label" for="inputRangeTo">To Month</label>
+                                                <input type="month" class="date-picker-input" id="inputRangeTo">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Footer Actions -->
+                                    <div class="date-popover-footer">
+                                        <button type="button" class="btn-date-cancel" id="dashDateCancelBtn">Cancel</button>
+                                        <button type="button" class="btn-date-apply" id="dashDateApplyBtn">Apply Filter</button>
+                                    </div>
+                                </div>
+                            </div>
+
                             <button class="btn-header-add" id="btnOpenAddModal">
                                 <i class="fa-solid fa-plus"></i>
                                 <span>Add New Client</span>
@@ -169,56 +215,52 @@
 
                     <!-- ==================== PERFORMANCE LEADERBOARDS: 4 BOXES ==================== -->
                     <div class="fin-performance-grid">
-                        <!-- Box 1: Connector (Top 5 Leads) -->
+                        <!-- Box 1: Connector -->
                         <div class="fin-card fin-perf-card">
                             <div class="fin-card-head">
                                 <div class="fin-card-brand-title">
                                     <div class="fin-icon-box bg-brand-light"><i class="fa-solid fa-people-arrows text-brand"></i></div>
                                     <span>Connector</span>
                                 </div>
-                                <span class="fin-perf-tag">Top 5 Leads</span>
                             </div>
                             <div class="fin-perf-list" id="perfConnectorList">
                                 <!-- Populated dynamically via JS -->
                             </div>
                         </div>
 
-                        <!-- Box 2: Smart Agent (Top 5 Charged) -->
+                        <!-- Box 2: Smart Agent -->
                         <div class="fin-card fin-perf-card">
                             <div class="fin-card-head">
                                 <div class="fin-card-brand-title">
                                     <div class="fin-icon-box bg-blue-light"><i class="fa-solid fa-user-tie text-blue"></i></div>
                                     <span>Smart Agent</span>
                                 </div>
-                                <span class="fin-perf-tag">Top 5 Charged</span>
                             </div>
                             <div class="fin-perf-list" id="perfSmartAgentList">
                                 <!-- Populated dynamically via JS -->
                             </div>
                         </div>
 
-                        <!-- Box 3: Super Agent (Top 5 Charged) -->
+                        <!-- Box 3: Super Agent -->
                         <div class="fin-card fin-perf-card">
                             <div class="fin-card-head">
                                 <div class="fin-card-brand-title">
                                     <div class="fin-icon-box bg-purple-light"><i class="fa-solid fa-shield-halved text-purple"></i></div>
                                     <span>Super Agent</span>
                                 </div>
-                                <span class="fin-perf-tag">Top 5 Charged</span>
                             </div>
                             <div class="fin-perf-list" id="perfSuperAgentList">
                                 <!-- Populated dynamically via JS -->
                             </div>
                         </div>
 
-                        <!-- Box 4: Closer (Top 5 Charged) -->
+                        <!-- Box 4: Closer -->
                         <div class="fin-card fin-perf-card">
                             <div class="fin-card-head">
                                 <div class="fin-card-brand-title">
                                     <div class="fin-icon-box bg-amber-light"><i class="fa-solid fa-award text-amber"></i></div>
                                     <span>Closer</span>
                                 </div>
-                                <span class="fin-perf-tag">Top 5 Charged</span>
                             </div>
                             <div class="fin-perf-list" id="perfCloserList">
                                 <!-- Populated dynamically via JS -->

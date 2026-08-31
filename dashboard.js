@@ -17,13 +17,12 @@ function renderDashboard() {
     const chargedClients = state.clients.filter(c => c.status === 'Charged');
     const kickBackClients = state.clients.filter(c => c.status === 'Kick Back');
 
-    // 1. Total Submit Amount
-    const totalSubmitAmount = submitClients.reduce((sum, c) => sum + (parseFloat(c.approvalAmount) || 0), 0);
-    const submittedCount = submitClients.length;
+    // 1. Total Charged Amount
+    const totalChargedAmount = chargedClients.reduce((sum, c) => sum + (parseFloat(c.approvalAmount) || 0), 0);
+    const chargedCount = chargedClients.length;
 
     // 2. Total Approval Amount
     const totalApproval = state.clients.reduce((sum, c) => sum + (parseFloat(c.approvalAmount) || 0), 0);
-    const chargedApproval = chargedClients.reduce((sum, c) => sum + (parseFloat(c.approvalAmount) || 0), 0);
     const totalMonthly = state.clients.reduce((sum, c) => sum + (parseFloat(c.monthly) || 0), 0);
     const totalResidual = state.clients.reduce((sum, c) => sum + (parseFloat(c.residual) || 0), 0);
 
@@ -36,17 +35,16 @@ function renderDashboard() {
     const totalPending = pendingClients.reduce((sum, c) => sum + (parseFloat(c.approvalAmount) || 0), 0);
     const pendingCount = pendingClients.length;
 
-    const submitPct = total > 0 ? Math.round((submittedCount / total) * 100) : 0;
-    const chargedPct = total > 0 ? Math.round((chargedClients.length / total) * 100) : 0;
+    const chargedPct = total > 0 ? Math.round((chargedCount / total) * 100) : 0;
     const receivedPct = total > 0 ? Math.round((receivedCount / total) * 100) : 0;
     const pendingPct = 100 - receivedPct;
 
-    // Card 1: Total Submit
+    // Card 1: Total Charged
     const elSubmit = document.getElementById('proTotalSubmit');
-    if (elSubmit) elSubmit.textContent = formatCurrency(totalSubmitAmount);
+    if (elSubmit) elSubmit.textContent = formatCurrency(totalChargedAmount);
 
     const elSubmitTrend = document.getElementById('submitSubtrend');
-    if (elSubmitTrend) elSubmitTrend.textContent = `${submittedCount} Submitted client${submittedCount === 1 ? '' : 's'} (${submitPct}% of total)`;
+    if (elSubmitTrend) elSubmitTrend.textContent = `${chargedCount} Charged client${chargedCount === 1 ? '' : 's'} (${chargedPct}% of total)`;
 
     // Card 2: Approval Amount
     const elApproval = document.getElementById('proTotalApproval');
@@ -186,7 +184,7 @@ function renderPerformanceLeaderboards() {
                 agentMap[name] = { name, count: 0, amount: 0, totalLeads: 0 };
             }
             agentMap[name].totalLeads++;
-            if (c.status === 'Submit') {
+            if (c.status === 'Charged') {
                 agentMap[name].count++;
                 agentMap[name].amount += (parseFloat(c.approvalAmount) || parseFloat(c.initialPayment) || 0);
             }
@@ -210,7 +208,7 @@ function renderPerformanceLeaderboards() {
                         <div class="perf-avatar-initials">${getInitials(m.name)}</div>
                         <div class="perf-member-info">
                             <span class="perf-member-name" title="${escapeHtml(m.name)}">${escapeHtml(m.name)}</span>
-                            <span class="perf-sub-count">${m.count} Submit${m.count === 1 ? '' : 's'}</span>
+                            <span class="perf-sub-count">${m.count} Charged</span>
                         </div>
                     </div>
                     <div class="perf-member-right">

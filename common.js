@@ -1144,11 +1144,11 @@ function updateNavBadgeCount() {
     const navClientCount = document.getElementById('navClientCount');
     if (navClientCount) {
         navClientCount.textContent = count;
-        navClientCount.style.display = count > 0 ? 'flex' : 'none';
+        navClientCount.style.display = count > 0 ? 'inline-flex' : 'none';
     }
     const navClients = document.getElementById('navClients');
     if (navClients) {
-        navClients.setAttribute('data-tooltip', `Clients (${count})`);
+        navClients.removeAttribute('data-tooltip');
     }
 }
 
@@ -1472,6 +1472,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const viewModalCloseFooterBtn = document.getElementById('viewModalCloseFooterBtn');
     if (viewModalCloseBtn) viewModalCloseBtn.addEventListener('click', () => closeModal(viewModal));
     if (viewModalCloseFooterBtn) viewModalCloseFooterBtn.addEventListener('click', () => closeModal(viewModal));
+
+    // User Profile Dropdown Toggle
+    const userProfileBtn = document.getElementById('userProfileBtn');
+    const userProfileDropdown = document.getElementById('userProfileDropdown');
+    
+    if (userProfileBtn && userProfileDropdown) {
+        userProfileBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = userProfileDropdown.classList.contains('active');
+            userProfileDropdown.classList.toggle('active', !isOpen);
+            userProfileBtn.setAttribute('aria-expanded', !isOpen ? 'true' : 'false');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!userProfileDropdown.contains(e.target)) {
+                userProfileDropdown.classList.remove('active');
+                userProfileBtn.setAttribute('aria-expanded', 'false');
+            }
+        });
+    }
 
     // Logout Action
     const btnLogout = document.getElementById('btnLogout');

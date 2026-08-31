@@ -358,63 +358,6 @@ select::-webkit-scrollbar {
 }
 
 /* ==========================================================================
-   SLEEK SIDEBAR TOOLTIP SYSTEM
-   ========================================================================== */
-
-[data-tooltip] {
-    position: relative;
-}
-
-[data-tooltip]::after {
-    content: attr(data-tooltip);
-    position: absolute;
-    left: calc(100% + 14px);
-    top: 50%;
-    transform: translateY(-50%) translateX(-4px) scale(0.95);
-    background: #0F172A;
-    color: #FFFFFF;
-    font-size: 0.76rem;
-    font-weight: 600;
-    letter-spacing: 0.01em;
-    padding: 0.4rem 0.75rem;
-    border-radius: 7px;
-    white-space: nowrap;
-    pointer-events: none;
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.16s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.18);
-    z-index: 99999 !important;
-}
-
-[data-tooltip]::before {
-    content: '';
-    position: absolute;
-    left: calc(100% + 7px);
-    top: 50%;
-    transform: translateY(-50%) translateX(-4px);
-    border: 4px solid transparent;
-    border-right-color: #0F172A;
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.16s cubic-bezier(0.4, 0, 0.2, 1);
-    pointer-events: none;
-    z-index: 99999 !important;
-}
-
-[data-tooltip]:hover::after {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(-50%) translateX(0) scale(1);
-}
-
-[data-tooltip]:hover::before {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(-50%) translateX(0);
-}
-
-/* ==========================================================================
    MAIN CONTENT AREA & TOP HEADER
    ========================================================================== */
 
@@ -430,7 +373,7 @@ select::-webkit-scrollbar {
 }
 
 .top-navbar {
-    height: var(--header-height);
+    height: var(--header-height, 64px);
     padding: 0 2rem;
     display: flex;
     align-items: center;
@@ -439,49 +382,120 @@ select::-webkit-scrollbar {
     background-color: #FFFFFF;
     flex-shrink: 0;
     z-index: 40;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    position: relative;
 }
 
 .nav-left {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    flex: 1;
 }
 
-.mobile-menu-btn {
+.header-brand {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+}
+
+.brand-text {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--text-main);
+    letter-spacing: -0.02em;
+}
+
+.top-nav-links {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    flex: 2;
+}
+
+.top-nav-item {
     display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 0.95rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    border-radius: var(--radius-md);
+    transition: var(--transition-fast);
+    position: relative;
+    text-decoration: none;
+}
+
+.top-nav-item i {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    transition: var(--transition-fast);
+}
+
+.top-nav-item:hover {
+    color: var(--primary);
+    background-color: var(--sidebar-hover);
+}
+
+.top-nav-item:hover i {
+    color: var(--primary);
+}
+
+.top-nav-item.active {
+    color: var(--primary);
+    background-color: #E8F8F0;
+    font-weight: 700;
+}
+
+.top-nav-item.active i {
+    color: var(--primary);
+}
+
+.top-nav-item .badge-count {
+    position: static;
+    margin-left: 0.35rem;
+    background: var(--primary);
+    color: #FFFFFF;
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 1px 6px;
+    border-radius: 9999px;
+    box-shadow: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+}
+
+.btn-top-logout {
+    display: flex;
     align-items: center;
     justify-content: center;
     width: 36px;
     height: 36px;
-    font-size: 0.95rem;
-    line-height: 1;
-    color: var(--text-secondary);
-    border: 1px solid var(--sidebar-border);
     border-radius: var(--radius-md);
-    background-color: #FFFFFF;
+    color: #EF4444;
+    background-color: transparent;
+    border: 1px solid transparent;
     cursor: pointer;
     transition: var(--transition-fast);
-    box-shadow: var(--shadow-sm);
+    font-size: 1.05rem;
 }
 
-.mobile-menu-btn i {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.95rem;
-    line-height: 1;
-}
-
-.mobile-menu-btn:hover {
-    background-color: var(--sidebar-hover);
-    color: var(--primary);
-    border-color: #CBD5E1;
+.btn-top-logout:hover {
+    background-color: #FEF2F2;
+    border-color: #FEE2E2;
+    transform: scale(1.05);
 }
 
 .nav-right {
     display: flex;
     align-items: center;
+    justify-content: flex-end;
     gap: 1.5rem;
+    flex: 1;
 }
 
 .currency-badge {
@@ -532,11 +546,109 @@ select::-webkit-scrollbar {
     border: 2px solid #FFFFFF;
 }
 
-.user-profile-widget {
+.user-profile-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.user-profile-btn {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    padding-left: 0.5rem;
+    padding: 0.35rem 0.65rem;
+    border-radius: var(--radius-md);
+    background: transparent;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.user-profile-btn:hover,
+.user-profile-dropdown.active .user-profile-btn {
+    background-color: var(--sidebar-hover);
+    border-color: var(--sidebar-border);
+}
+
+.user-dropdown-arrow {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    transition: transform 0.2s ease;
+    margin-left: 0.2rem;
+}
+
+.user-profile-dropdown.active .user-dropdown-arrow {
+    transform: rotate(180deg);
+}
+
+.user-dropdown-menu {
+    position: absolute;
+    top: calc(95% + 6px);
+    right: 0;
+    width: 100%;
+    min-width: 200px;
+    background: #FFFFFF;
+    border: 1px solid var(--sidebar-border);
+    border-radius: var(--radius-md);
+    box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.12), 0 8px 10px -6px rgba(15, 23, 42, 0.06);
+    padding: 0.4rem;
+    z-index: 100;
+    display: none;
+    animation: dropdownFadeIn 0.15s ease-out;
+}
+
+@keyframes dropdownFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.user-profile-dropdown.active .user-dropdown-menu {
+    display: block;
+}
+
+.user-dropdown-items {
+    padding: 0;
+}
+
+.user-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    width: 100%;
+    padding: 0.55rem 0.85rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-main);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    transition: var(--transition-fast);
+}
+
+.user-dropdown-item:hover {
+    background-color: var(--sidebar-hover);
+    color: var(--primary);
+}
+
+.user-dropdown-item.dropdown-logout-btn {
+    color: #EF4444;
+}
+
+.user-dropdown-item.dropdown-logout-btn:hover {
+    background-color: #FEF2F2;
+    color: #DC2626;
+}
+
+.user-dropdown-item.dropdown-logout-btn i {
+    color: #EF4444;
+    font-size: 0.95rem;
 }
 
 .user-meta-text {
@@ -1588,6 +1700,86 @@ select::-webkit-scrollbar {
     background-color: #FFFFFF;
 }
 
+.rep-receiving-input,
+.rep-residual-receiving-input {
+    width: 100%;
+    max-width: 110px;
+    height: 27px;
+    padding: 0.15rem 0.45rem;
+    font-size: 0.74rem;
+    font-weight: 600;
+    font-family: inherit;
+    color: var(--text-main);
+    background-color: #FAFCFA;
+    border: 1.5px solid #CBD5E1;
+    border-radius: var(--radius-sm);
+    transition: var(--transition-fast);
+    text-align: left;
+}
+
+.rep-receiving-input:hover,
+.rep-residual-receiving-input:hover {
+    border-color: #94A3B8;
+    background-color: #FFFFFF;
+}
+
+.rep-receiving-input:focus,
+.rep-residual-receiving-input:focus {
+    border-color: var(--primary);
+    background-color: #FFFFFF;
+    box-shadow: 0 0 0 2px rgba(0, 182, 122, 0.15);
+    outline: none;
+}
+
+#reportTable th.col-rep-date,
+#residualTable th.col-rep-date {
+    width: 17%;
+}
+
+#reportTable th.col-rep-name,
+#residualTable th.col-rep-name {
+    width: 35%;
+}
+
+#reportTable th.col-rep-plan,
+#residualTable th.col-rep-plan {
+    width: 16%;
+}
+
+#reportTable th.col-rep-initial,
+#residualTable th.col-rep-initial {
+    width: 16%;
+}
+
+#reportTable th.col-rep-receiving,
+#residualTable th.col-rep-receiving {
+    width: 16%;
+}
+
+#combinedTable th.col-rep-date {
+    width: 15%;
+}
+
+#combinedTable th.col-rep-name {
+    width: 29%;
+}
+
+#combinedTable th.col-rep-plan {
+    width: 14%;
+}
+
+#combinedTable th.col-rep-initial {
+    width: 14%;
+}
+
+#combinedTable th.col-rep-residual {
+    width: 14%;
+}
+
+#combinedTable th.col-rep-receiving {
+    width: 14%;
+}
+
 .tbl-input.is-invalid, .tbl-select.is-invalid {
     border-color: var(--danger);
     background-color: #FEF2F2;
@@ -1993,6 +2185,59 @@ select::-webkit-scrollbar {
     color: var(--text-muted);
     font-size: 0.85rem;
     margin-bottom: 1.25rem;
+}
+
+.table-section-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text-main);
+    letter-spacing: -0.01em;
+}
+
+.header-date-plain {
+    font-weight: 600;
+    color: var(--text-muted);
+    font-size: 1.25rem;
+    margin-left: 0.25rem;
+}
+
+/* ==========================================================================
+   REPORTS TABLES (Clean Full 10 Rows View - No Inner Scroll)
+   ========================================================================== */
+.rep-table-limited-scroll {
+    overflow: visible !important;
+    max-height: none !important;
+    position: relative;
+    border: 1px solid var(--sidebar-border);
+    border-radius: var(--radius-md);
+    background-color: #FFFFFF;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 2rem;
+}
+
+.rep-table-limited-scroll .table-scroll-container {
+    max-height: none !important;
+    overflow-y: visible !important;
+    overflow-x: auto !important;
+}
+
+.rep-table-limited-scroll table {
+    width: 100%;
+    margin-bottom: 0;
+}
+
+.rep-table-limited-scroll thead th {
+    background-color: #F8FAFC !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.rep-table-limited-scroll tfoot {
+    background-color: #F8FAFC !important;
+    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.rep-table-limited-scroll tfoot td {
+    background-color: #F8FAFC !important;
 }
 
 /* ==========================================================================

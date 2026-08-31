@@ -15,68 +15,60 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Master Rounded Canvas Card -->
+    <!-- Master Full-Width App Layout with Topbar Navigation -->
     <div class="app-canvas">
-        <!-- Sidebar Overlay (Mobile) -->
-        <div class="sidebar-overlay" id="sidebarOverlay"></div>
-
-        <!-- Sidebar (Icon-Only with Tooltips) -->
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-brand">
-                <a href="index.html" class="brand-wrapper">
-                    <div class="brand-icon-leaf">
-                        <i class="fa-solid fa-asterisk"></i>
-                    </div>
-                </a>
-            </div>
-
-            <!-- Navigation Links -->
-            <nav class="sidebar-nav">
-                <a href="index.html" class="nav-item" id="navDashboard" data-tooltip="Dashboard">
-                    <i class="fa-solid fa-table-cells-large nav-icon"></i>
-                </a>
-                <a href="clients.html" class="nav-item" id="navClients" data-tooltip="Clients">
-                    <i class="fa-solid fa-users nav-icon"></i>
-                    <span class="badge-count" id="navClientCount">0</span>
-                </a>
-                <a href="reports.html" class="nav-item active" id="navReports" data-tooltip="Reports">
-                    <i class="fa-solid fa-file-invoice-dollar nav-icon"></i>
-                </a>
-            </nav>
-
-            <!-- Bottom Actions: Logout -->
-            <div class="sidebar-bottom">
-                <button class="sidebar-link-btn btn-logout" id="btnLogout" data-tooltip="Logout">
-                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
-                </button>
-            </div>
-        </aside>
-
         <!-- Main Wrapper -->
         <div class="main-wrapper">
-            <!-- Top Navbar -->
+            <!-- Top Navbar Header -->
             <header class="top-navbar">
                 <div class="nav-left">
-                    <button class="mobile-menu-btn" id="mobileToggleBtn" aria-label="Toggle Menu">
-                        <i class="fa-solid fa-bars"></i>
-                    </button>
+                    <a href="index.html" class="header-brand">
+                        <div class="brand-icon-leaf">
+                            <i class="fa-solid fa-asterisk"></i>
+                        </div>
+                        <span class="brand-text">Finance Portal</span>
+                    </a>
                 </div>
 
-                <div class="nav-right">
-                    <!-- Notifications Bell -->
-                    <button class="notification-bell-btn" title="Notifications">
-                        <i class="fa-regular fa-bell"></i>
-                        <span class="notif-badge">3</span>
-                    </button>
+                <!-- Top Navigation Links (Centered) -->
+                <nav class="top-nav-links">
+                    <a href="index.html" class="top-nav-item" id="navDashboard">
+                        <i class="fa-solid fa-table-cells-large"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="clients.html" class="top-nav-item" id="navClients">
+                        <i class="fa-solid fa-users"></i>
+                        <span>Client Data</span>
+                        <span class="badge-count" id="navClientCount">0</span>
+                    </a>
+                    <a href="reports.html" class="top-nav-item active" id="navReports">
+                        <i class="fa-solid fa-file-invoice-dollar"></i>
+                        <span>Reports</span>
+                    </a>
+                </nav>
 
-                    <!-- User Profile: Avatar First, Account Name After -->
-                    <div class="user-profile-widget">
-                        <div class="user-avatar-img">
-                            MB
-                        </div>
-                        <div class="user-meta-text">
-                            <span class="user-meta-name">Admin Lead</span>
-                            <span class="user-meta-title">Assistant Manager</span>
+                <div class="nav-right">
+                    <!-- User Profile Dropdown -->
+                    <div class="user-profile-dropdown" id="userProfileDropdown">
+                        <button class="user-profile-widget user-profile-btn" id="userProfileBtn" aria-expanded="false" aria-haspopup="true">
+                            <div class="user-avatar-img">
+                                MB
+                            </div>
+                            <div class="user-meta-text">
+                                <span class="user-meta-name">Admin Lead</span>
+                                <span class="user-meta-title">Assistant Manager</span>
+                            </div>
+                            <i class="fa-solid fa-chevron-down user-dropdown-arrow"></i>
+                        </button>
+
+                        <!-- Profile Dropdown Menu -->
+                        <div class="user-dropdown-menu" id="userDropdownMenu">
+                            <div class="user-dropdown-items">
+                                <button type="button" class="user-dropdown-item dropdown-logout-btn" id="btnLogout">
+                                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                                    <span>Logout</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -85,10 +77,19 @@
             <!-- Page Main Content Area -->
             <main class="page-content" id="mainContent">
                 <section class="view-section active" id="viewReports">
-                    <!-- Header with Title & Action Buttons -->
+                    <!-- Page Top Main Header with Live Current Date -->
                     <div class="page-header-row">
                         <div class="title-with-meta">
-                            <h1 class="page-main-title">Initial Payment Reports</h1>
+                            <h1 class="page-main-title">
+                                Report <span class="header-date-plain" id="reportHeaderDate">*** - **, ****</span>
+                            </h1>
+                        </div>
+                    </div>
+
+                    <!-- ==================== 1. INITIAL PAYMENTS SECTION ==================== -->
+                    <div class="page-header-row" style="margin-top: 1rem;">
+                        <div class="title-with-meta">
+                            <h2 class="table-section-title">Initial Payments</h2>
                         </div>
 
                         <div class="header-action-buttons">
@@ -99,253 +100,174 @@
                         </div>
                     </div>
 
-                    <!-- ==================== TOP ROW: 4 SUMMARY KPI CARDS ==================== -->
-                    <div class="fin-performance-grid rep-grid-mb">
-                        <!-- Card 1: Total Due Initial -->
-                        <div class="fin-card rep-kpi-card">
-                            <div class="fin-card-head rep-card-head">
-                                <div class="fin-card-brand-title">
-                                    <div class="fin-icon-box bg-brand-light"><i class="fa-solid fa-wallet text-brand"></i></div>
-                                    <span>Total Initial Due</span>
-                                </div>
-                            </div>
-                            <div class="fin-amount-row rep-amount-row">
-                                <h2 class="fin-hero-amount" id="repTotalInitialDue">$0.00</h2>
-                            </div>
-                            <div class="fin-sub-trend text-green rep-sub-trend">
-                                <i class="fa-solid fa-circle-check"></i>
-                                <span id="repDueSubtitle">Scheduled for selected date</span>
-                            </div>
-                            <!-- Background Decorative Wave SVG -->
-                            <svg class="fin-card-wave-bg" width="95" height="42" viewBox="0 0 95 42" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M3 28C16 28 20 12 32 20C44 28 50 8 64 20C78 32 84 14 92 16" stroke="#00B67A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </div>
-
-                        <!-- Card 2: Clients with Payments Due -->
-                        <div class="fin-card rep-kpi-card">
-                            <div class="fin-card-head rep-card-head">
-                                <div class="fin-card-brand-title">
-                                    <div class="fin-icon-box bg-blue-light"><i class="fa-solid fa-users text-blue"></i></div>
-                                    <span>Clients Due</span>
-                                </div>
-                            </div>
-                            <div class="fin-amount-row rep-amount-row">
-                                <h2 class="fin-hero-amount" id="repClientsDueCount">0 Clients</h2>
-                            </div>
-                            <div class="fin-sub-trend text-secondary rep-sub-trend">
-                                <i class="fa-regular fa-calendar"></i>
-                                <span id="repClientsCountSub">Active initial schedules</span>
-                            </div>
-                            <!-- Background Decorative Wave SVG -->
-                            <svg class="fin-card-wave-bg" width="95" height="42" viewBox="0 0 95 42" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M3 30C16 30 22 14 34 10C46 6 54 26 66 14C78 4 84 8 92 6" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </div>
-
-                        <!-- Card 3: Collected / Received -->
-                        <div class="fin-card rep-kpi-card">
-                            <div class="fin-card-head rep-card-head">
-                                <div class="fin-card-brand-title">
-                                    <div class="fin-icon-box bg-green-light"><i class="fa-solid fa-circle-check text-green"></i></div>
-                                    <span>Collected</span>
-                                </div>
-                            </div>
-                            <div class="fin-amount-row rep-amount-row">
-                                <h2 class="fin-hero-amount rep-total-collected" id="repTotalCollected">$0.00</h2>
-                            </div>
-                            <div class="fin-sub-trend text-green rep-sub-trend">
-                                <i class="fa-solid fa-arrow-trend-up"></i>
-                                <span id="repCollectedSub">0 Received</span>
-                            </div>
-                            <!-- Background Decorative Wave SVG -->
-                            <svg class="fin-card-wave-bg" width="95" height="42" viewBox="0 0 95 42" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M3 32C15 32 22 20 34 12C46 4 56 26 68 14C80 2 86 10 92 8" stroke="#00B67A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </div>
-
-                        <!-- Card 4: Pending Collection -->
-                        <div class="fin-card rep-kpi-card">
-                            <div class="fin-card-head rep-card-head">
-                                <div class="fin-card-brand-title">
-                                    <div class="fin-icon-box bg-amber-light"><i class="fa-solid fa-clock text-amber"></i></div>
-                                    <span>Pending Collection</span>
-                                </div>
-                            </div>
-                            <div class="fin-amount-row rep-amount-row">
-                                <h2 class="fin-hero-amount rep-total-pending" id="repTotalPending">$0.00</h2>
-                            </div>
-                            <div class="fin-sub-trend text-amber rep-sub-trend">
-                                <i class="fa-solid fa-hourglass-half"></i>
-                                <span id="repPendingSub">0 Pending</span>
-                            </div>
-                            <!-- Background Decorative Wave SVG -->
-                            <svg class="fin-card-wave-bg" width="95" height="42" viewBox="0 0 95 42" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M3 12C15 12 22 26 34 32C46 38 56 16 68 24C80 32 86 22 92 20" stroke="#D97706" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </div>
-                    </div>
-
-                    <!-- ==================== REPORT FILTER CONTROLS TOOLBAR ==================== -->
-                    <div class="crm-toolbar">
-                        <div class="toolbar-left">
-                            <!-- Due Date Picker Pill -->
-                            <div class="toolbar-date-pill">
-                                <i class="fa-regular fa-calendar-check"></i>
-                                <span class="toolbar-date-pill-label">Due Date:</span>
-                                <input type="date" id="repDateInput" class="toolbar-date-input">
-                            </div>
-
-                            <!-- Search Box Pill -->
-                            <div class="search-box-pill">
-                                <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                                <input type="text" id="repSearchInput" class="search-input-pill" placeholder="Search client, agent...">
-                            </div>
-
-                            <!-- Status Filter Dropdown -->
-                            <div class="filter-select-wrapper">
-                                <i class="fa-solid fa-filter filter-icon-left"></i>
-                                <select id="repStatusFilter" class="filter-select-pill rep-status-select">
-                                    <option value="all">All Receivings</option>
-                                    <option value="Pending">Pending</option>
-                                    <option value="Received">Received</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <!-- Quick Date Preset Pills (Generated / Synced dynamically: Today + 4 Back Dates) -->
-                        <div class="toolbar-right">
-                            <div class="table-sheet-tabs-container" id="repQuickDateContainer">
-                                <button type="button" class="sheet-tab-btn active" data-date="today">Today</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- ==================== MAIN REPORT TABLE ==================== -->
-                    <div class="table-outer-wrapper">
+                    <div class="table-outer-wrapper rep-table-limited-scroll">
                         <div class="table-scroll-container">
                             <table class="crm-data-table" id="reportTable">
                                 <thead>
                                     <tr>
                                         <th class="col-rep-date">
-                                            <div class="th-wrap">
-                                                <span class="th-multi-line">Initial Payment<br>Date</span>
-                                                <button type="button" class="th-filter-btn" data-col="initialPaymentDate" title="Filter Date" onclick="openThFilterPopover(this, 'initialPaymentDate', 'Initial Payment Date')">
-                                                    <i class="fa-solid fa-filter"></i>
-                                                </button>
-                                            </div>
+                                            <div class="th-wrap"><span>Initial Payment Date</span></div>
                                         </th>
                                         <th class="col-rep-name">
-                                            <div class="th-wrap">
-                                                <span>Client Name</span>
-                                                <button type="button" class="th-filter-btn" data-col="clientName" title="Filter Client Name" onclick="openThFilterPopover(this, 'clientName', 'Client Name')">
-                                                    <i class="fa-solid fa-filter"></i>
-                                                </button>
-                                            </div>
-                                        </th>
-                                        <th class="col-rep-conn">
-                                            <div class="th-wrap">
-                                                <span>Connector</span>
-                                                <button type="button" class="th-filter-btn" data-col="connector" title="Filter Connector" onclick="openThFilterPopover(this, 'connector', 'Connector')">
-                                                    <i class="fa-solid fa-filter"></i>
-                                                </button>
-                                            </div>
-                                        </th>
-                                        <th class="col-rep-smart">
-                                            <div class="th-wrap">
-                                                <span>Smart Agent</span>
-                                                <button type="button" class="th-filter-btn" data-col="smartAgent" title="Filter Smart Agent" onclick="openThFilterPopover(this, 'smartAgent', 'Smart Agent')">
-                                                    <i class="fa-solid fa-filter"></i>
-                                                </button>
-                                            </div>
-                                        </th>
-                                        <th class="col-rep-super">
-                                            <div class="th-wrap">
-                                                <span>Super Agent</span>
-                                                <button type="button" class="th-filter-btn" data-col="superAgent" title="Filter Super Agent" onclick="openThFilterPopover(this, 'superAgent', 'Super Agent')">
-                                                    <i class="fa-solid fa-filter"></i>
-                                                </button>
-                                            </div>
-                                        </th>
-                                        <th class="col-rep-closer">
-                                            <div class="th-wrap">
-                                                <span>Closer</span>
-                                                <button type="button" class="th-filter-btn" data-col="closer" title="Filter Closer" onclick="openThFilterPopover(this, 'closer', 'Closer')">
-                                                    <i class="fa-solid fa-filter"></i>
-                                                </button>
-                                            </div>
+                                            <div class="th-wrap"><span>Client Name</span></div>
                                         </th>
                                         <th class="col-rep-plan">
-                                            <div class="th-wrap">
-                                                <span>Plan</span>
-                                                <button type="button" class="th-filter-btn" data-col="plan" title="Filter Plan" onclick="openThFilterPopover(this, 'plan', 'Plan')">
-                                                    <i class="fa-solid fa-filter"></i>
-                                                </button>
-                                            </div>
-                                        </th>
-                                        <th class="col-rep-approval">
-                                            <div class="th-wrap">
-                                                <span class="th-multi-line">Approval<br>Amount</span>
-                                            </div>
+                                            <div class="th-wrap"><span>Plan</span></div>
                                         </th>
                                         <th class="col-rep-initial">
-                                            <div class="th-wrap">
-                                                <span class="th-multi-line">Initial<br>Payment</span>
-                                            </div>
+                                            <div class="th-wrap"><span>Initial Payment</span></div>
                                         </th>
                                         <th class="col-rep-receiving">
-                                            <div class="th-wrap">
-                                                <span>Receiving</span>
-                                                <button type="button" class="th-filter-btn" data-col="receiving" title="Filter Receiving" onclick="openThFilterPopover(this, 'receiving', 'Receiving')">
-                                                    <i class="fa-solid fa-filter"></i>
-                                                </button>
-                                            </div>
-                                        </th>
-                                        <th class="col-rep-action">
-                                            <div class="th-wrap"><span>Action</span></div>
+                                            <div class="th-wrap"><span>Receiving</span></div>
                                         </th>
                                     </tr>
                                 </thead>
                                 <tbody id="reportTableBody">
-                                    <!-- Populated dynamically via JS -->
+                                    <!-- Populated dynamically via JS (10 records) -->
                                 </tbody>
                                 <tfoot id="reportTableFoot" class="crm-table-tfoot">
                                     <tr class="tfoot-summary-row">
-                                        <td colspan="7" class="text-left font-bold">
+                                        <td colspan="3" class="text-left font-bold">
                                             <div class="tfoot-summary-title">
                                                 <i class="fa-solid fa-calculator"></i>
-                                                <span>Total Summary (<span id="tfootClientCount">0 Clients</span>)</span>
+                                                <span>Total Summary (<span id="tfootClientCount">10 Clients</span>)</span>
                                             </div>
-                                        </td>
-                                        <td class="currency-val tfoot-amount-cell" id="tfootTotalApproval">
-                                            $0.00
                                         </td>
                                         <td class="currency-val tfoot-initial-cell" id="tfootTotalInitial">
                                             $0.00
                                         </td>
-                                        <td id="tfootReceivingSummary">
-                                            <span class="status-pill pill-charged tfoot-pill-wrap">0 Rec / 0 Pend</span>
+                                        <td class="currency-val tfoot-initial-cell text-primary font-bold" id="tfootReceivingSummary">
+                                            $0.00
                                         </td>
-                                        <td></td>
                                     </tr>
                                 </tfoot>
                             </table>
                         </div>
+                    </div>
 
-                        <!-- Empty State -->
-                        <div class="empty-table-state" id="reportEmptyState">
-                            <div class="empty-icon-wrap">
-                                <i class="fa-solid fa-calendar-xmark"></i>
-                            </div>
-                            <h3 class="empty-title">No scheduled collections found</h3>
-                            <p class="empty-desc">There are no initial payments scheduled for the selected date or filter criteria.</p>
+                    <!-- ==================== 2. RESIDUAL PAYMENTS SECTION ==================== -->
+                    <div class="page-header-row" style="margin-top: 2rem;">
+                        <div class="title-with-meta">
+                            <h2 class="table-section-title">Residual Payments</h2>
                         </div>
 
-                        <!-- Footer with Record Counter -->
-                        <div class="table-pagination-footer">
-                            <div class="pagination-range-text" id="repPaginationRange">
-                                Showing 0 of 0 Scheduled Initial Collections
-                            </div>
+                        <div class="header-action-buttons">
+                            <button class="btn-header-export" id="btnExportResidualReport">
+                                <i class="fa-solid fa-arrow-up-from-bracket"></i>
+                                <span>Export</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-outer-wrapper rep-table-limited-scroll">
+                        <div class="table-scroll-container">
+                            <table class="crm-data-table" id="residualTable">
+                                <thead>
+                                    <tr>
+                                        <th class="col-rep-date">
+                                            <div class="th-wrap"><span>Residual Date</span></div>
+                                        </th>
+                                        <th class="col-rep-name">
+                                            <div class="th-wrap"><span>Client Name</span></div>
+                                        </th>
+                                        <th class="col-rep-plan">
+                                            <div class="th-wrap"><span>Plan</span></div>
+                                        </th>
+                                        <th class="col-rep-initial">
+                                            <div class="th-wrap">
+                                                <span>Residual</span>
+                                            </div>
+                                        </th>
+                                        <th class="col-rep-receiving">
+                                            <div class="th-wrap"><span>Receiving</span></div>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody id="residualTableBody">
+                                    <!-- Populated dynamically via JS (10 records) -->
+                                </tbody>
+                                <tfoot id="residualTableFoot" class="crm-table-tfoot">
+                                    <tr class="tfoot-summary-row">
+                                        <td colspan="3" class="text-left font-bold">
+                                            <div class="tfoot-summary-title">
+                                                <i class="fa-solid fa-calculator"></i>
+                                                <span>Total Summary (<span id="tfootResidualClientCount">10 Clients</span>)</span>
+                                            </div>
+                                        </td>
+                                        <td class="currency-val tfoot-initial-cell" id="tfootTotalResidual">
+                                            $0.00
+                                        </td>
+                                        <td class="currency-val tfoot-initial-cell text-primary font-bold" id="tfootResidualReceivingSummary">
+                                            $0.00
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- ==================== 3. INITIAL & RESIDUAL PAYMENTS SECTION ==================== -->
+                    <div class="page-header-row" style="margin-top: 2rem;">
+                        <div class="title-with-meta">
+                            <h2 class="table-section-title">Initial & Residual Payments</h2>
+                        </div>
+
+                        <div class="header-action-buttons">
+                            <button class="btn-header-export" id="btnExportCombinedReport">
+                                <i class="fa-solid fa-arrow-up-from-bracket"></i>
+                                <span>Export</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-outer-wrapper rep-table-limited-scroll" style="margin-bottom: 2.5rem;">
+                        <div class="table-scroll-container">
+                            <table class="crm-data-table" id="combinedTable">
+                                <thead>
+                                    <tr>
+                                        <th class="col-rep-date">
+                                            <div class="th-wrap"><span>Payment Date</span></div>
+                                        </th>
+                                        <th class="col-rep-name">
+                                            <div class="th-wrap"><span>Client Name</span></div>
+                                        </th>
+                                        <th class="col-rep-plan">
+                                            <div class="th-wrap"><span>Plan</span></div>
+                                        </th>
+                                        <th class="col-rep-initial">
+                                            <div class="th-wrap"><span>Initial Payment</span></div>
+                                        </th>
+                                        <th class="col-rep-residual">
+                                            <div class="th-wrap"><span>Residual</span></div>
+                                        </th>
+                                        <th class="col-rep-receiving">
+                                            <div class="th-wrap"><span>Receiving</span></div>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody id="combinedTableBody">
+                                    <!-- Populated dynamically via JS (10 records) -->
+                                </tbody>
+                                <tfoot id="combinedTableFoot" class="crm-table-tfoot">
+                                    <tr class="tfoot-summary-row">
+                                        <td colspan="3" class="text-left font-bold">
+                                            <div class="tfoot-summary-title">
+                                                <i class="fa-solid fa-calculator"></i>
+                                                <span>Total Summary (<span id="tfootCombinedClientCount">10 Clients</span>)</span>
+                                            </div>
+                                        </td>
+                                        <td class="currency-val tfoot-initial-cell" id="tfootCombinedInitial">
+                                            $0.00
+                                        </td>
+                                        <td class="currency-val tfoot-initial-cell" id="tfootCombinedResidual">
+                                            $0.00
+                                        </td>
+                                        <td class="currency-val tfoot-initial-cell text-primary font-bold" id="tfootCombinedReceiving">
+                                            $0.00
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
                         </div>
                     </div>
                 </section>

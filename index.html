@@ -15,68 +15,60 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Master Rounded Canvas Card (Matching Screenshot) -->
+    <!-- Master Full-Width App Layout with Topbar Navigation -->
     <div class="app-canvas">
-        <!-- Sidebar Overlay (Mobile) -->
-        <div class="sidebar-overlay" id="sidebarOverlay"></div>
-
-        <!-- Sidebar (Icon-Only with Tooltips) -->
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-brand">
-                <a href="index.html" class="brand-wrapper">
-                    <div class="brand-icon-leaf">
-                        <i class="fa-solid fa-asterisk"></i>
-                    </div>
-                </a>
-            </div>
-
-            <!-- Navigation Links -->
-            <nav class="sidebar-nav">
-                <a href="index.html" class="nav-item active" id="navDashboard" data-tooltip="Dashboard">
-                    <i class="fa-solid fa-table-cells-large nav-icon"></i>
-                </a>
-                <a href="clients.html" class="nav-item" id="navClients" data-tooltip="Clients">
-                    <i class="fa-solid fa-users nav-icon"></i>
-                    <span class="badge-count" id="navClientCount">0</span>
-                </a>
-                <a href="reports.html" class="nav-item" id="navReports" data-tooltip="Reports">
-                    <i class="fa-solid fa-file-invoice-dollar nav-icon"></i>
-                </a>
-            </nav>
-
-            <!-- Bottom Actions: Logout -->
-            <div class="sidebar-bottom">
-                <button class="sidebar-link-btn btn-logout" id="btnLogout" data-tooltip="Logout">
-                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
-                </button>
-            </div>
-        </aside>
-
         <!-- Main Wrapper -->
         <div class="main-wrapper">
-            <!-- Top Navbar -->
+            <!-- Top Navbar Header -->
             <header class="top-navbar">
                 <div class="nav-left">
-                    <button class="mobile-menu-btn" id="mobileToggleBtn" aria-label="Toggle Menu">
-                        <i class="fa-solid fa-bars"></i>
-                    </button>
+                    <a href="index.html" class="header-brand">
+                        <div class="brand-icon-leaf">
+                            <i class="fa-solid fa-asterisk"></i>
+                        </div>
+                        <span class="brand-text">Finance Portal</span>
+                    </a>
                 </div>
 
-                <div class="nav-right">
-                    <!-- Notifications Bell -->
-                    <button class="notification-bell-btn" title="Notifications">
-                        <i class="fa-regular fa-bell"></i>
-                        <span class="notif-badge">3</span>
-                    </button>
+                <!-- Top Navigation Links (Centered) -->
+                <nav class="top-nav-links">
+                    <a href="index.html" class="top-nav-item active" id="navDashboard">
+                        <i class="fa-solid fa-table-cells-large"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="clients.html" class="top-nav-item" id="navClients">
+                        <i class="fa-solid fa-users"></i>
+                        <span>Client Data</span>
+                        <span class="badge-count" id="navClientCount">0</span>
+                    </a>
+                    <a href="reports.html" class="top-nav-item" id="navReports">
+                        <i class="fa-solid fa-file-invoice-dollar"></i>
+                        <span>Reports</span>
+                    </a>
+                </nav>
 
-                    <!-- User Profile: Avatar First, Account Name After -->
-                    <div class="user-profile-widget">
-                        <div class="user-avatar-img">
-                            MB
-                        </div>
-                        <div class="user-meta-text">
-                            <span class="user-meta-name">Admin Lead</span>
-                            <span class="user-meta-title">Assistant Manager</span>
+                <div class="nav-right">
+                    <!-- User Profile Dropdown -->
+                    <div class="user-profile-dropdown" id="userProfileDropdown">
+                        <button class="user-profile-widget user-profile-btn" id="userProfileBtn" aria-expanded="false" aria-haspopup="true">
+                            <div class="user-avatar-img">
+                                MB
+                            </div>
+                            <div class="user-meta-text">
+                                <span class="user-meta-name">Admin Lead</span>
+                                <span class="user-meta-title">Assistant Manager</span>
+                            </div>
+                            <i class="fa-solid fa-chevron-down user-dropdown-arrow"></i>
+                        </button>
+
+                        <!-- Profile Dropdown Menu -->
+                        <div class="user-dropdown-menu" id="userDropdownMenu">
+                            <div class="user-dropdown-items">
+                                <button type="button" class="user-dropdown-item dropdown-logout-btn" id="btnLogout">
+                                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                                    <span>Logout</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

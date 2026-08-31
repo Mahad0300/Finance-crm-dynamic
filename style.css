@@ -1131,8 +1131,8 @@ select::-webkit-scrollbar {
 }
 
 .crm-data-table td {
-    padding: 0.65rem 0.75rem;
-    font-size: 0.76rem;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.70rem;
     color: var(--text-secondary);
     border-bottom: 1px solid var(--table-border);
     vertical-align: middle;
@@ -1843,7 +1843,7 @@ select::-webkit-scrollbar {
 }
 
 .client-name-text {
-    font-size: 0.76rem;
+    font-size: 0.70rem;
     font-weight: 700;
     color: var(--text-main);
 }

@@ -2929,18 +2929,16 @@ select::-webkit-scrollbar {
         padding: 0 1.5rem;
     }
     .page-content {
-        display: flex;
-        flex-direction: column;
-        height: calc(100vh - 52px);
-        overflow: hidden;
-        padding: 0.85rem 1.5rem 1rem;
+        padding: 0.85rem 1.5rem 1.25rem;
+        height: auto;
+        min-height: auto;
+        overflow: visible;
     }
     #viewClients.active {
-        display: flex;
-        flex-direction: column;
-        flex: 1;
-        min-height: 0;
-        height: 100%;
+        display: block;
+        height: auto;
+        min-height: auto;
+        flex: none;
     }
     .page-header-row {
         margin-bottom: 0.65rem;
@@ -2957,20 +2955,19 @@ select::-webkit-scrollbar {
         height: 52px;
     }
     .table-outer-wrapper {
-        flex: 1;
-        min-height: 0;
-        display: flex;
-        flex-direction: column;
+        height: auto;
+        min-height: auto;
+        flex: none;
     }
     .table-scroll-container {
-        flex: 1;
-        min-height: 0;
-        overflow-y: auto;
+        height: auto;
+        min-height: auto;
+        flex: none;
         overflow-x: auto;
+        overflow-y: visible;
         max-height: none;
     }
     .table-pagination-footer {
-        flex-shrink: 0;
         padding: 0.65rem 1.25rem;
     }
 }
@@ -2992,7 +2989,8 @@ select::-webkit-scrollbar {
         font-size: 0.65rem;
     }
     .page-content {
-        height: calc(100vh - 46px);
+        height: auto;
+        min-height: auto;
         padding: 0.6rem 1.25rem 0.75rem;
     }
     .page-header-row {
@@ -3047,7 +3045,8 @@ select::-webkit-scrollbar {
         padding: 0 1rem;
     }
     .page-content {
-        height: calc(100vh - 40px);
+        height: auto;
+        min-height: auto;
         padding: 0.4rem 0.75rem 0.5rem;
     }
     .page-header-row {

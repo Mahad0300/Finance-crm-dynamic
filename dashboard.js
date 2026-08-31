@@ -90,11 +90,10 @@ function renderDashboard() {
 
     const clients = getFilteredDashboardClients();
     const total = clients.length;
-    const chargedClients = clients.filter(c => c.status === 'Charged');
-
-    // 1. Total Charged Amount
-    const totalChargedAmount = chargedClients.reduce((sum, c) => sum + (parseFloat(c.approvalAmount) || 0), 0);
-    const chargedCount = chargedClients.length;
+    // 1. Total Submit Amount
+    const submittedClients = clients.filter(c => c.status === 'Submit');
+    const totalSubmitAmount = submittedClients.reduce((sum, c) => sum + (parseFloat(c.approvalAmount) || parseFloat(c.initialPayment) || 0), 0);
+    const submitCount = submittedClients.length;
 
     // 2. Total Approval Amount & 5% Residual
     const totalApproval = clients.reduce((sum, c) => sum + (parseFloat(c.approvalAmount) || 0), 0);
@@ -108,15 +107,15 @@ function renderDashboard() {
     const pendingClients = clients.filter(c => c.receiving === 'Pending');
     const pendingCount = pendingClients.length;
 
-    const chargedPct = total > 0 ? Math.round((chargedCount / total) * 100) : 0;
+    const submitPct = total > 0 ? Math.round((submitCount / total) * 100) : 0;
     const receivedPct = total > 0 ? Math.round((receivedCount / total) * 100) : 0;
 
-    // Card 1: Total Charged
+    // Card 1: Total Submit
     const elSubmit = document.getElementById('proTotalSubmit');
-    if (elSubmit) elSubmit.textContent = formatCurrency(totalChargedAmount);
+    if (elSubmit) elSubmit.textContent = formatCurrency(totalSubmitAmount);
 
     const elSubmitTrend = document.getElementById('submitSubtrend');
-    if (elSubmitTrend) elSubmitTrend.textContent = `${chargedCount} Charged client${chargedCount === 1 ? '' : 's'} (${chargedPct}% of filtered total)`;
+    if (elSubmitTrend) elSubmitTrend.textContent = `${submitCount} Submit client${submitCount === 1 ? '' : 's'} (${submitPct}% of filtered total)`;
 
     // Card 2: Approval Amount
     const elApproval = document.getElementById('proTotalApproval');

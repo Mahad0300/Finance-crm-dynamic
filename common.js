@@ -36,7 +36,7 @@ const defaultClosers = ['shahab', 'Yasir', 'Ahmed', 'Ali'];
 const sampleClients = [
     {
         id: 1,
-        date: "2026-08-13",
+        date: "2026-09-01",
         clientName: "LAVERNON EDWARDS",
         connector: "Zabloon Shamaun",
         smartAgent: "Hamza Khan",
@@ -46,14 +46,14 @@ const sampleClients = [
         plan: 24,
         monthly: 359.49,
         initialPayment: 359.49,
-        initialPaymentDate: "2026-08-31",
+        initialPaymentDate: "2026-09-15",
         residual: 45.00,
         approvalAmount: 900.00,
         receiving: "Pending"
     },
     {
         id: 2,
-        date: "2026-08-14",
+        date: "2026-09-01",
         clientName: "MARLENE DICKERSON",
         connector: "David Wilson",
         smartAgent: "Ahad",
@@ -63,14 +63,14 @@ const sampleClients = [
         plan: 36,
         monthly: 420.00,
         initialPayment: 420.00,
-        initialPaymentDate: "2026-09-01",
+        initialPaymentDate: "2026-09-16",
         residual: 50.00,
         approvalAmount: 1000.00,
         receiving: "Received"
     },
     {
         id: 3,
-        date: "2026-08-15",
+        date: "2026-09-02",
         clientName: "WOLNEY JACKSON",
         connector: "Sarah Connor",
         smartAgent: "Ali",
@@ -80,14 +80,14 @@ const sampleClients = [
         plan: 12,
         monthly: 180.50,
         initialPayment: 180.50,
-        initialPaymentDate: "2026-08-31",
+        initialPaymentDate: "2026-09-17",
         residual: 35.00,
         approvalAmount: 700.00,
         receiving: "Pending"
     },
     {
         id: 4,
-        date: "2026-08-16",
+        date: "2026-09-02",
         clientName: "ROBERT CHEN",
         connector: "Michael Scott",
         smartAgent: "Hamza Khan",
@@ -97,14 +97,14 @@ const sampleClients = [
         plan: 48,
         monthly: 550.00,
         initialPayment: 550.00,
-        initialPaymentDate: "2026-09-02",
+        initialPaymentDate: "2026-09-18",
         residual: 55.00,
         approvalAmount: 1100.00,
         receiving: "Received"
     },
     {
         id: 5,
-        date: "2026-08-17",
+        date: "2026-09-03",
         clientName: "EMILY DAVIS",
         connector: "Jessica Taylor",
         smartAgent: "Usman",
@@ -114,14 +114,14 @@ const sampleClients = [
         plan: 18,
         monthly: 275.00,
         initialPayment: 275.00,
-        initialPaymentDate: "2026-09-05",
+        initialPaymentDate: "2026-09-19",
         residual: 45.00,
         approvalAmount: 900.00,
         receiving: "Pending"
     },
     {
         id: 6,
-        date: "2026-08-18",
+        date: "2026-09-03",
         clientName: "DANIEL MARTINEZ",
         connector: "Alex Turner",
         smartAgent: "Ahad",
@@ -131,14 +131,14 @@ const sampleClients = [
         plan: 60,
         monthly: 650.00,
         initialPayment: 650.00,
-        initialPaymentDate: "2026-09-10",
+        initialPaymentDate: "2026-09-20",
         residual: 55.00,
         approvalAmount: 1100.00,
         receiving: "Received"
     },
     {
         id: 7,
-        date: "2026-08-19",
+        date: "2026-09-04",
         clientName: "SOPHIA RODRIGUEZ",
         connector: "Rachel Green",
         smartAgent: "Ali",
@@ -148,14 +148,14 @@ const sampleClients = [
         plan: 12,
         monthly: 95.00,
         initialPayment: 95.00,
-        initialPaymentDate: "2026-08-31",
+        initialPaymentDate: "2026-09-21",
         residual: 25.00,
         approvalAmount: 500.00,
         receiving: "Received"
     },
     {
         id: 8,
-        date: "2026-08-20",
+        date: "2026-09-04",
         clientName: "JAMES ANDERSON",
         connector: "Thomas Shelby",
         smartAgent: "Hamza Khan",
@@ -165,14 +165,14 @@ const sampleClients = [
         plan: 24,
         monthly: 320.00,
         initialPayment: 320.00,
-        initialPaymentDate: "2026-09-15",
+        initialPaymentDate: "2026-09-22",
         residual: 45.00,
         approvalAmount: 900.00,
         receiving: "Received"
     },
     {
         id: 9,
-        date: "2026-08-21",
+        date: "2026-09-05",
         clientName: "OLIVIA THOMAS",
         connector: "Donna Paulsen",
         smartAgent: "Usman",
@@ -182,14 +182,14 @@ const sampleClients = [
         plan: 36,
         monthly: 210.00,
         initialPayment: 210.00,
-        initialPaymentDate: "2026-08-28",
+        initialPaymentDate: "2026-09-23",
         residual: 35.00,
         approvalAmount: 700.00,
         receiving: "Pending"
     },
     {
         id: 10,
-        date: "2026-08-22",
+        date: "2026-09-05",
         clientName: "WILLIAM WHITE",
         connector: "Harvey Specter",
         smartAgent: "Ahad",
@@ -199,14 +199,14 @@ const sampleClients = [
         plan: 12,
         monthly: 480.00,
         initialPayment: 480.00,
-        initialPaymentDate: "2026-09-18",
+        initialPaymentDate: "2026-09-24",
         residual: 50.00,
         approvalAmount: 1000.00,
         receiving: "Received"
     },
     {
         id: 11,
-        date: "2026-08-23",
+        date: "2026-09-06",
         clientName: "AVA HERNANDEZ",
         connector: "Mike Ross",
         smartAgent: "Ali",
@@ -216,14 +216,14 @@ const sampleClients = [
         plan: 24,
         monthly: 150.00,
         initialPayment: 150.00,
-        initialPaymentDate: "2026-09-20",
+        initialPaymentDate: "2026-09-25",
         residual: 35.00,
         approvalAmount: 700.00,
         receiving: "Pending"
     },
     {
         id: 12,
-        date: "2026-08-24",
+        date: "2026-09-06",
         clientName: "ETHAN MOORE",
         connector: "Louis Litt",
         smartAgent: "Hamza Khan",
@@ -233,7 +233,7 @@ const sampleClients = [
         plan: 48,
         monthly: 1200.00,
         initialPayment: 1200.00,
-        initialPaymentDate: "2026-09-25",
+        initialPaymentDate: "2026-09-26",
         residual: 55.00,
         approvalAmount: 1100.00,
         receiving: "Received"
@@ -289,8 +289,14 @@ function initStorage() {
                 saveClients();
             } else {
                 state.clients = parsed;
-                // Auto-recalculate approval and residual with active rules
+                // Auto-recalculate approval and residual with active rules, ensure active current month
                 state.clients.forEach(c => {
+                    if (c.date && c.date.startsWith('2026-08')) {
+                        c.date = c.date.replace('2026-08', '2026-09');
+                    }
+                    if (c.initialPaymentDate && c.initialPaymentDate.startsWith('2026-08')) {
+                        c.initialPaymentDate = c.initialPaymentDate.replace('2026-08', '2026-09');
+                    }
                     if (c.initialPayment !== undefined && c.initialPayment !== null) {
                         const calc = calculateApprovalAndResidual(c.initialPayment);
                         if (calc.matched) {

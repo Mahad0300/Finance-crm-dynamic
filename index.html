@@ -88,7 +88,7 @@
                             <div class="dash-date-filter-wrap" id="dashDateFilterWrap">
                                 <button type="button" class="btn-dash-date-trigger" id="dashDateTriggerBtn" aria-expanded="false" aria-haspopup="true">
                                     <i class="fa-regular fa-calendar-days"></i>
-                                    <span id="dashDateLabel">All Time</span>
+                                    <span id="dashDateLabel">Single Month</span>
                                     <i class="fa-solid fa-chevron-down caret-icon"></i>
                                 </button>
 
@@ -96,18 +96,17 @@
                                 <div class="dash-date-popover" id="dashDatePopover">
                                     <div class="date-popover-header">
                                         <span class="date-popover-title">Date & Month Filter</span>
-                                        <button type="button" class="date-popover-reset" id="dashDateResetBtn">Reset</button>
+                                        <button type="button" class="date-popover-reset" id="dashDateResetBtn">Reset to Current</button>
                                     </div>
 
                                     <!-- Mode Switcher Tabs -->
                                     <div class="date-mode-tabs">
-                                        <button type="button" class="date-tab-btn active" data-mode="all">All Time</button>
-                                        <button type="button" class="date-tab-btn" data-mode="single-month">Single Month</button>
+                                        <button type="button" class="date-tab-btn active" data-mode="single-month">Single Month</button>
                                         <button type="button" class="date-tab-btn" data-mode="month-range">Month Range</button>
                                     </div>
 
                                     <!-- Pane 1: Single Month -->
-                                    <div class="date-tab-pane" id="paneSingleMonth">
+                                    <div class="date-tab-pane active" id="paneSingleMonth">
                                         <label class="date-pane-label" for="inputSingleMonth">Select Month</label>
                                         <input type="month" class="date-picker-input" id="inputSingleMonth">
                                     </div>
@@ -157,10 +156,6 @@
                                     <div class="fin-amount-row">
                                         <h2 class="fin-hero-amount" id="proTotalSubmit">$0</h2>
                                     </div>
-                                    <div class="fin-sub-trend text-green">
-                                        <i class="fa-solid fa-circle-check"></i>
-                                        <span id="submitSubtrend">0 Submit clients</span>
-                                    </div>
                                 </div>
 
                                 <!-- Pixel Staircase Art Box (Emerald/Lime Theme) -->
@@ -188,7 +183,6 @@
                                     <h2 class="fin-hero-amount" id="proTotalApproval">$0</h2>
                                     <span class="fin-badge-trend-green"><i class="fa-solid fa-arrow-trend-up"></i> <span id="proResidualTag">$0</span></span>
                                 </div>
-                                <p class="fin-sub-note">Total approved credit volume across all clients.</p>
                             </div>
                         </div>
 

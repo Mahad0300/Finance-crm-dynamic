@@ -20,35 +20,34 @@
         <!-- Sidebar Overlay (Mobile) -->
         <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-        <!-- Sidebar -->
+        <!-- Sidebar (Icon-Only with Tooltips) -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-brand">
-                <div class="brand-wrapper">
+                <a href="index.html" class="brand-wrapper">
                     <div class="brand-icon-leaf">
                         <i class="fa-solid fa-asterisk"></i>
                     </div>
-                    <span class="brand-title">Financial Advisor</span>
-                </div>
+                </a>
             </div>
 
             <!-- Navigation Links -->
             <nav class="sidebar-nav">
-                <a href="index.html" class="nav-item" id="navDashboard">
+                <a href="index.html" class="nav-item" id="navDashboard" data-tooltip="Dashboard">
                     <i class="fa-solid fa-table-cells-large nav-icon"></i>
-                    <span>Dashboard</span>
                 </a>
-                <a href="clients.html" class="nav-item active" id="navClients">
+                <a href="clients.html" class="nav-item active" id="navClients" data-tooltip="Clients">
                     <i class="fa-solid fa-users nav-icon"></i>
-                    <span>Clients</span>
                     <span class="badge-count" id="navClientCount">0</span>
+                </a>
+                <a href="reports.html" class="nav-item" id="navReports" data-tooltip="Reports">
+                    <i class="fa-solid fa-file-invoice-dollar nav-icon"></i>
                 </a>
             </nav>
 
             <!-- Bottom Actions: Logout -->
             <div class="sidebar-bottom">
-                <button class="sidebar-link-btn btn-logout" id="btnLogout" title="Logout">
+                <button class="sidebar-link-btn btn-logout" id="btnLogout" data-tooltip="Logout">
                     <i class="fa-solid fa-arrow-right-from-bracket"></i>
-                    <span>Logout</span>
                 </button>
             </div>
         </aside>
@@ -72,7 +71,7 @@
 
                     <!-- User Profile: Avatar First, Account Name After -->
                     <div class="user-profile-widget">
-                        <div class="user-avatar-img" style="display: flex; align-items: center; justify-content: center; color: #00B67A; font-weight: 800; font-size: 0.85rem;">
+                        <div class="user-avatar-img">
                             MB
                         </div>
                         <div class="user-meta-text">
@@ -111,7 +110,7 @@
                             <div class="search-box-pill">
                                 <i class="fa-solid fa-magnifying-glass search-icon"></i>
                                 <input type="text" id="searchInput" class="search-input-pill" placeholder="Search by Client, Connector, Agent, Closer...">
-                                <button class="search-clear-pill" id="searchClearBtn" aria-label="Clear search" style="display: none;">
+                                <button class="search-clear-pill" id="searchClearBtn" aria-label="Clear search">
                                     <i class="fa-solid fa-circle-xmark"></i>
                                 </button>
                             </div>
@@ -175,70 +174,114 @@
                             <table class="crm-data-table" id="clientsTable">
                                 <thead>
                                     <tr>
-                                        <th class="sortable" data-sort="date">
-                                            <span>Date</span>
-                                            <i class="fa-solid fa-sort sort-caret"></i>
+                                        <th>
+                                            <div class="th-wrap">
+                                                <span>Date</span>
+                                                <button type="button" class="th-filter-btn" data-col="date" title="Filter Date" onclick="openThFilterPopover(this, 'date', 'Date')">
+                                                    <i class="fa-solid fa-filter"></i>
+                                                </button>
+                                            </div>
                                         </th>
-                                        <th class="sortable" data-sort="clientName">
-                                            <span>Client Name</span>
-                                            <i class="fa-solid fa-sort sort-caret"></i>
+                                        <th>
+                                            <div class="th-wrap">
+                                                <span>Client Name</span>
+                                                <button type="button" class="th-filter-btn" data-col="clientName" title="Filter Client Name" onclick="openThFilterPopover(this, 'clientName', 'Client Name')">
+                                                    <i class="fa-solid fa-filter"></i>
+                                                </button>
+                                            </div>
                                         </th>
-                                        <th class="sortable" data-sort="connector">
-                                            <span>Connector</span>
-                                            <i class="fa-solid fa-sort sort-caret"></i>
+                                        <th>
+                                            <div class="th-wrap">
+                                                <span>Connector</span>
+                                                <button type="button" class="th-filter-btn" data-col="connector" title="Filter Connector" onclick="openThFilterPopover(this, 'connector', 'Connector')">
+                                                    <i class="fa-solid fa-filter"></i>
+                                                </button>
+                                            </div>
                                         </th>
-                                        <th class="sortable" data-sort="smartAgent">
-                                            <span>Smart Agent</span>
-                                            <i class="fa-solid fa-sort sort-caret"></i>
+                                        <th>
+                                            <div class="th-wrap">
+                                                <span>Smart Agent</span>
+                                                <button type="button" class="th-filter-btn" data-col="smartAgent" title="Filter Smart Agent" onclick="openThFilterPopover(this, 'smartAgent', 'Smart Agent')">
+                                                    <i class="fa-solid fa-filter"></i>
+                                                </button>
+                                            </div>
                                         </th>
-                                        <th class="sortable" data-sort="superAgent">
-                                            <span>Super Agent</span>
-                                            <i class="fa-solid fa-sort sort-caret"></i>
+                                        <th>
+                                            <div class="th-wrap">
+                                                <span>Super Agent</span>
+                                                <button type="button" class="th-filter-btn" data-col="superAgent" title="Filter Super Agent" onclick="openThFilterPopover(this, 'superAgent', 'Super Agent')">
+                                                    <i class="fa-solid fa-filter"></i>
+                                                </button>
+                                            </div>
                                         </th>
-                                        <th class="sortable" data-sort="closer">
-                                            <span>Closer</span>
-                                            <i class="fa-solid fa-sort sort-caret"></i>
+                                        <th>
+                                            <div class="th-wrap">
+                                                <span>Closer</span>
+                                                <button type="button" class="th-filter-btn" data-col="closer" title="Filter Closer" onclick="openThFilterPopover(this, 'closer', 'Closer')">
+                                                    <i class="fa-solid fa-filter"></i>
+                                                </button>
+                                            </div>
                                         </th>
-                                        <th class="sortable" data-sort="status">
-                                            <span>Status</span>
-                                            <i class="fa-solid fa-sort sort-caret"></i>
+                                        <th>
+                                            <div class="th-wrap">
+                                                <span>Status</span>
+                                                <button type="button" class="th-filter-btn" data-col="status" title="Filter Status" onclick="openThFilterPopover(this, 'status', 'Status')">
+                                                    <i class="fa-solid fa-filter"></i>
+                                                </button>
+                                            </div>
                                         </th>
-                                        <th class="sortable" data-sort="plan">
-                                            <span>Plan</span>
-                                            <i class="fa-solid fa-sort sort-caret"></i>
+                                        <th>
+                                            <div class="th-wrap">
+                                                <span>Plan</span>
+                                                <button type="button" class="th-filter-btn" data-col="plan" title="Filter Plan" onclick="openThFilterPopover(this, 'plan', 'Plan')">
+                                                    <i class="fa-solid fa-filter"></i>
+                                                </button>
+                                            </div>
                                         </th>
-                                        <th class="sortable text-right" data-sort="monthly">
-                                            <span>Monthly</span>
-                                            <i class="fa-solid fa-sort sort-caret"></i>
+                                        <th>
+                                            <div class="th-wrap">
+                                                <span>Monthly</span>
+                                            </div>
                                         </th>
-                                        <th class="sortable text-right" data-sort="initialPayment">
-                                            <span>Initial Payment</span>
-                                            <i class="fa-solid fa-sort sort-caret"></i>
+                                        <th>
+                                            <div class="th-wrap">
+                                                <span class="th-multi-line">Initial<br>Payment</span>
+                                            </div>
                                         </th>
-                                        <th class="sortable" data-sort="initialPaymentDate">
-                                            <span>Initial Date</span>
-                                            <i class="fa-solid fa-sort sort-caret"></i>
+                                        <th>
+                                            <div class="th-wrap">
+                                                <span class="th-multi-line">Initial Payment<br>Date</span>
+                                                <button type="button" class="th-filter-btn" data-col="initialPaymentDate" title="Filter Payment Date" onclick="openThFilterPopover(this, 'initialPaymentDate', 'Initial Payment Date')">
+                                                    <i class="fa-solid fa-filter"></i>
+                                                </button>
+                                            </div>
                                         </th>
-                                        <th class="sortable text-right" data-sort="residual">
-                                            <span>Residual</span>
-                                            <i class="fa-solid fa-sort sort-caret"></i>
+                                        <th>
+                                            <div class="th-wrap">
+                                                <span>Residual</span>
+                                            </div>
                                         </th>
-                                        <th class="sortable text-right" data-sort="approvalAmount">
-                                            <span>Approval Amount</span>
-                                            <i class="fa-solid fa-sort sort-caret"></i>
+                                        <th>
+                                            <div class="th-wrap">
+                                                <span class="th-multi-line">Approval<br>Amount</span>
+                                            </div>
                                         </th>
-                                        <th class="sortable text-center" data-sort="receiving">
-                                            <span>Receiving</span>
-                                            <i class="fa-solid fa-sort sort-caret"></i>
+                                        <th>
+                                            <div class="th-wrap">
+                                                <span>Receiving</span>
+                                                <button type="button" class="th-filter-btn" data-col="receiving" title="Filter Receiving" onclick="openThFilterPopover(this, 'receiving', 'Receiving')">
+                                                    <i class="fa-solid fa-filter"></i>
+                                                </button>
+                                            </div>
                                         </th>
                                     </tr>
                                     <!-- Inline Table Input Row (Shown on clicking Add New Client) -->
-                                    <tr class="inline-entry-row" id="inlineAddRow" style="display: none;" title="Type client data and press Enter to save">
+                                    <tr class="inline-entry-row" id="inlineAddRow" title="Type client data and press Enter to save">
                                         <td>
                                             <input type="date" class="tbl-input" id="tblDate">
                                         </td>
                                         <td>
-                                            <input type="text" class="tbl-input" id="tblClientName" placeholder="Client Name..." style="font-weight: 700;">
+                                            <input type="text" class="tbl-input font-bold" id="tblClientName" placeholder="Client Name...">
                                         </td>
                                         <td>
                                             <input type="text" class="tbl-input" id="tblConnector" placeholder="Connector...">
@@ -281,10 +324,10 @@
                                             <select class="tbl-select" id="tblPlan"></select>
                                         </td>
                                         <td>
-                                            <input type="number" step="0.01" class="tbl-input text-right" id="tblMonthly" placeholder="0.00">
+                                            <input type="number" step="0.01" class="tbl-input" id="tblMonthly" placeholder="0.00">
                                         </td>
                                         <td>
-                                            <input type="number" step="0.01" class="tbl-input text-right" id="tblInitialPayment" placeholder="0.00">
+                                            <input type="number" step="0.01" class="tbl-input" id="tblInitialPayment" placeholder="0.00">
                                         </td>
                                         <td>
                                             <input type="date" class="tbl-input" id="tblInitialPaymentDate">
@@ -293,7 +336,7 @@
                                             <div class="tbl-calc-badge" id="tblResidual">$0</div>
                                         </td>
                                         <td>
-                                            <div class="tbl-calc-badge" id="tblApprovalAmount" style="color: var(--text-main);">$0</div>
+                                            <div class="tbl-calc-badge text-main" id="tblApprovalAmount">$0</div>
                                         </td>
                                         <td>
                                             <select class="tbl-select" id="tblReceiving">
@@ -312,13 +355,16 @@
                         <!-- Table Bottom Pagination Footer -->
                         <div class="table-pagination-footer" id="tablePaginationFooter">
                             <span class="pagination-range-text" id="tableResultsCount">1 &ndash; 10 of 12</span>
+                            <div class="table-sheet-tabs-container" id="tableSheetTabsContainer">
+                                <!-- Dynamic Sheet Tabs populated by JS -->
+                            </div>
                             <div class="pagination-arrow-group" id="paginationControls">
                                 <!-- Dynamic arrow & number buttons -->
                             </div>
                         </div>
 
                         <!-- Empty State -->
-                        <div class="empty-table-state" id="emptyState" style="display: none;">
+                        <div class="empty-table-state" id="emptyState">
                             <div class="empty-icon-wrap">
                                 <i class="fa-solid fa-folder-open"></i>
                             </div>
@@ -339,9 +385,9 @@
     <div class="modal-backdrop" id="deleteModal" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle">
         <div class="modal-dialog modal-dialog-sm">
             <div class="modal-card">
-                <div class="modal-top-header" style="background-color: #FEF2F2;">
+                <div class="modal-top-header modal-header-danger">
                     <div>
-                        <h2 class="modal-heading-title" style="color: var(--danger);" id="deleteModalTitle">Delete Client</h2>
+                        <h2 class="modal-heading-title text-danger" id="deleteModalTitle">Delete Client</h2>
                         <p class="modal-heading-sub">Confirm permanent record removal</p>
                     </div>
                     <button class="modal-close-icon" id="deleteModalCloseBtn" aria-label="Close modal">
@@ -350,17 +396,17 @@
                 </div>
 
                 <div class="modal-scroll-body">
-                    <p style="font-size: 1rem; color: var(--text-main); margin-bottom: 0.5rem;">
+                    <p class="delete-confirm-text">
                         Are you sure you want to delete <strong id="deleteClientName">this client</strong>?
                     </p>
-                    <p style="font-size: 0.85rem; color: var(--text-muted);">
+                    <p class="delete-confirm-sub">
                         This will remove the record from localStorage and recalculate all financial statistics.
                     </p>
                 </div>
 
                 <div class="modal-action-footer">
                     <button type="button" class="btn-header-export" id="deleteCancelBtn">Cancel</button>
-                    <button type="button" class="btn-header-add" id="deleteConfirmBtn" style="background-color: var(--danger);">
+                    <button type="button" class="btn-header-add btn-danger-action" id="deleteConfirmBtn">
                         <i class="fa-solid fa-trash-can"></i>
                         <span>Delete Client</span>
                     </button>
@@ -412,7 +458,8 @@
     <!-- Toast Notifications Container -->
     <div class="toast-container" id="toastContainer" aria-live="polite" aria-atomic="true"></div>
 
-    <!-- Application Script -->
-    <script src="script.js"></script>
+    <!-- Application Scripts -->
+    <script src="common.js"></script>
+    <script src="clients.js"></script>
 </body>
 </html>

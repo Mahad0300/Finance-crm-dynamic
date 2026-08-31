@@ -20,35 +20,34 @@
         <!-- Sidebar Overlay (Mobile) -->
         <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-        <!-- Sidebar -->
+        <!-- Sidebar (Icon-Only with Tooltips) -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-brand">
-                <div class="brand-wrapper">
+                <a href="index.html" class="brand-wrapper">
                     <div class="brand-icon-leaf">
                         <i class="fa-solid fa-asterisk"></i>
                     </div>
-                    <span class="brand-title">Financial Advisor</span>
-                </div>
+                </a>
             </div>
 
             <!-- Navigation Links -->
             <nav class="sidebar-nav">
-                <a href="index.html" class="nav-item active" id="navDashboard">
+                <a href="index.html" class="nav-item active" id="navDashboard" data-tooltip="Dashboard">
                     <i class="fa-solid fa-table-cells-large nav-icon"></i>
-                    <span>Dashboard</span>
                 </a>
-                <a href="clients.html" class="nav-item" id="navClients">
+                <a href="clients.html" class="nav-item" id="navClients" data-tooltip="Clients">
                     <i class="fa-solid fa-users nav-icon"></i>
-                    <span>Clients</span>
                     <span class="badge-count" id="navClientCount">0</span>
+                </a>
+                <a href="reports.html" class="nav-item" id="navReports" data-tooltip="Reports">
+                    <i class="fa-solid fa-file-invoice-dollar nav-icon"></i>
                 </a>
             </nav>
 
             <!-- Bottom Actions: Logout -->
             <div class="sidebar-bottom">
-                <button class="sidebar-link-btn btn-logout" id="btnLogout" title="Logout">
+                <button class="sidebar-link-btn btn-logout" id="btnLogout" data-tooltip="Logout">
                     <i class="fa-solid fa-arrow-right-from-bracket"></i>
-                    <span>Logout</span>
                 </button>
             </div>
         </aside>
@@ -72,7 +71,7 @@
 
                     <!-- User Profile: Avatar First, Account Name After -->
                     <div class="user-profile-widget">
-                        <div class="user-avatar-img" style="display: flex; align-items: center; justify-content: center; color: #00B67A; font-weight: 800; font-size: 0.85rem;">
+                        <div class="user-avatar-img">
                             MB
                         </div>
                         <div class="user-meta-text">
@@ -87,7 +86,7 @@
             <main class="page-content" id="mainContent">
                 <section class="view-section active" id="viewDashboard">
                     <!-- Page Top Header -->
-                    <div class="page-header-row" style="margin-bottom: 1.25rem;">
+                    <div class="page-header-row page-header-row-mb">
                         <div class="title-with-meta">
                             <h1 class="page-main-title">Executive Dashboard</h1>
                         </div>
@@ -106,128 +105,131 @@
 
                     <!-- ==================== TOP ROW: 3 KPI CARDS ==================== -->
                     <div class="fin-top-grid">
-                        <!-- Card 1: My Balance -->
-                        <div class="fin-card fin-card-balance">
+                        <!-- Card 1: Total Submit -->
+                        <div class="fin-card">
                             <div class="fin-card-head">
                                 <div class="fin-card-brand-title">
-                                    <div class="fin-icon-box bg-brand-light"><i class="fa-solid fa-wallet text-brand"></i></div>
-                                    <span>My balance</span>
-                                </div>
-                                <div class="fin-pill-group">
-                                    <div class="fin-pill-select">USD <i class="fa-solid fa-chevron-down"></i></div>
-                                    <div class="fin-pill-select">ALL TIME <i class="fa-solid fa-chevron-down"></i></div>
+                                    <div class="fin-icon-box bg-brand-light"><i class="fa-solid fa-paper-plane text-brand"></i></div>
+                                    <span>Total Submit</span>
                                 </div>
                             </div>
 
                             <div class="fin-balance-body">
                                 <div>
                                     <div class="fin-amount-row">
-                                        <h2 class="fin-hero-amount" id="proTotalApproval">$50,764.00</h2>
-                                        <button class="fin-eye-btn" title="Toggle Balance View"><i class="fa-regular fa-eye"></i></button>
+                                        <h2 class="fin-hero-amount" id="proTotalSubmit">$0</h2>
                                     </div>
                                     <div class="fin-sub-trend text-green">
                                         <i class="fa-solid fa-circle-check"></i>
-                                        <span id="balanceSubtrend">+12% Balance increase, Good progress.</span>
+                                        <span id="submitSubtrend">0 Submitted clients</span>
                                     </div>
                                 </div>
 
                                 <!-- Pixel Staircase Art Box (Emerald/Lime Theme) -->
                                 <div class="fin-pixel-chart">
-                                    <div class="pixel-col" style="height: 20%;"><div class="px-block px-green-1"></div></div>
-                                    <div class="pixel-col" style="height: 40%;"><div class="px-block px-green-2"></div><div class="px-block px-green-1"></div></div>
-                                    <div class="pixel-col" style="height: 60%;"><div class="px-block px-brand-dark"></div><div class="px-block px-green-2"></div><div class="px-block px-green-1"></div></div>
-                                    <div class="pixel-col" style="height: 80%;"><div class="px-block px-lime"></div><div class="px-block px-brand-dark"></div><div class="px-block px-green-2"></div></div>
-                                    <div class="pixel-col" style="height: 100%;"><div class="px-block px-brand-main"></div><div class="px-block px-lime"></div><div class="px-block px-brand-dark"></div></div>
+                                    <div class="pixel-col pixel-col-20"><div class="px-block px-green-1"></div></div>
+                                    <div class="pixel-col pixel-col-40"><div class="px-block px-green-2"></div><div class="px-block px-green-1"></div></div>
+                                    <div class="pixel-col pixel-col-60"><div class="px-block px-brand-dark"></div><div class="px-block px-green-2"></div><div class="px-block px-green-1"></div></div>
+                                    <div class="pixel-col pixel-col-80"><div class="px-block px-lime"></div><div class="px-block px-brand-dark"></div><div class="px-block px-green-2"></div></div>
+                                    <div class="pixel-col pixel-col-100"><div class="px-block px-brand-main"></div><div class="px-block px-lime"></div><div class="px-block px-brand-dark"></div></div>
                                 </div>
-                            </div>
-
-                            <!-- Bottom Action Buttons -->
-                            <div class="fin-action-btn-row">
-                                <button class="fin-btn-primary" id="btnQuickAddClient">
-                                    <i class="fa-solid fa-plus"></i>
-                                    <span>Add Client</span>
-                                </button>
-                                <button class="fin-btn-dark" id="btnQuickExport">
-                                    <i class="fa-solid fa-arrow-up"></i>
-                                    <span>Send Data</span>
-                                </button>
-                                <button class="fin-btn-outline" id="btnQuickViewAll">
-                                    <i class="fa-solid fa-arrow-down"></i>
-                                    <span>Request Sheet</span>
-                                </button>
                             </div>
                         </div>
 
-                        <!-- Card 2: Income -->
+                        <!-- Card 2: Approval Amount -->
                         <div class="fin-card">
                             <div class="fin-card-head">
                                 <div class="fin-card-brand-title">
-                                    <div class="fin-icon-box bg-green-light"><i class="fa-solid fa-arrow-down text-green"></i></div>
-                                    <span>Income</span>
+                                    <div class="fin-icon-box bg-green-light"><i class="fa-solid fa-stamp text-green"></i></div>
+                                    <span>Approval Amount</span>
                                 </div>
-                                <div class="fin-pill-select" id="finMonthIncome">JUNE 2026 <i class="fa-solid fa-chevron-down"></i></div>
                             </div>
 
                             <div class="fin-card-body-val">
                                 <div class="fin-amount-with-badge">
-                                    <h2 class="fin-hero-amount" id="proTotalMonthly">$5,000.00</h2>
-                                    <span class="fin-badge-trend-green"><i class="fa-solid fa-arrow-trend-up"></i> <span id="proResidualTag">$456</span></span>
+                                    <h2 class="fin-hero-amount" id="proTotalApproval">$0</h2>
+                                    <span class="fin-badge-trend-green"><i class="fa-solid fa-arrow-trend-up"></i> <span id="proResidualTag">$0</span></span>
                                 </div>
-                                <p class="fin-sub-note">Income increased by <strong style="color: var(--primary);">9.1%</strong> from last month.</p>
-                            </div>
-
-                            <div class="fin-split-metrics">
-                                <div class="fin-split-col">
-                                    <span class="fin-split-label">Charged</span>
-                                    <strong class="fin-split-value" id="finIncomeCharged">$3,000</strong>
-                                </div>
-                                <div class="fin-split-divider"></div>
-                                <div class="fin-split-col">
-                                    <span class="fin-split-label">Pending</span>
-                                    <strong class="fin-split-value" id="finIncomePending">$2,000</strong>
-                                </div>
+                                <p class="fin-sub-note">Total approved credit volume across all clients.</p>
                             </div>
                         </div>
 
-                        <!-- Card 3: Expense (Upfront Collections) -->
+                        <!-- Card 3: Received Amount -->
                         <div class="fin-card">
                             <div class="fin-card-head">
                                 <div class="fin-card-brand-title">
-                                    <div class="fin-icon-box bg-red-light"><i class="fa-solid fa-arrow-up text-red"></i></div>
-                                    <span>Expense</span>
+                                    <div class="fin-icon-box bg-brand-light"><i class="fa-solid fa-circle-check text-brand"></i></div>
+                                    <span>Received Amount</span>
                                 </div>
-                                <div class="fin-pill-select" id="finMonthExpense">JUNE 2026 <i class="fa-solid fa-chevron-down"></i></div>
                             </div>
 
                             <div class="fin-card-body-val">
                                 <div class="fin-amount-row">
-                                    <h2 class="fin-hero-amount" id="proTotalInitial">$4,000.00</h2>
+                                    <h2 class="fin-hero-amount" id="proTotalReceived">$0</h2>
                                 </div>
-                                <div class="fin-badge-trend-red">
-                                    <i class="fa-solid fa-arrow-trend-up"></i> 
-                                    <span id="expenseTrendText">$456 vs last month</span>
-                                </div>
-                            </div>
-
-                            <!-- Segmented Horizontal Bar with Floating Indicator -->
-                            <div class="fin-expense-progress-box">
-                                <div class="fin-progress-capsules" id="finProgressCapsules">
-                                    <div class="capsule-track cap-black" id="trackCharged" style="width: 0%;"></div>
-                                    <div class="capsule-track cap-brand active-track" id="trackSubmit" style="width: 0%;">
-                                        <div class="cap-float-tag" id="capFloatVal">$0.00</div>
-                                    </div>
-                                    <div class="capsule-track cap-lime" id="trackKickback" style="width: 0%;"></div>
-                                </div>
-                                <div class="fin-progress-scale">
-                                    <span id="scaleChargedVal">0%</span>
-                                    <span id="scaleSubmitVal">0%</span>
+                                <div class="fin-badge-trend-green">
+                                    <i class="fa-solid fa-circle-check"></i> 
+                                    <span id="expenseTrendText">0 Received clients</span>
                                 </div>
                             </div>
+                        </div>
+                    </div>
 
-                            <div class="fin-progress-legend">
-                                <span><i class="fa-solid fa-circle" style="color: #0F172A;"></i> Charged</span>
-                                <span><i class="fa-solid fa-circle" style="color: var(--primary);"></i> Submit</span>
-                                <span><i class="fa-solid fa-circle" style="color: #A3E635;"></i> Kick Back</span>
+                    <!-- ==================== PERFORMANCE LEADERBOARDS: 4 BOXES ==================== -->
+                    <div class="fin-performance-grid">
+                        <!-- Box 1: Connector (Top 5 Leads) -->
+                        <div class="fin-card fin-perf-card">
+                            <div class="fin-card-head">
+                                <div class="fin-card-brand-title">
+                                    <div class="fin-icon-box bg-brand-light"><i class="fa-solid fa-people-arrows text-brand"></i></div>
+                                    <span>Connector</span>
+                                </div>
+                                <span class="fin-perf-tag">Top 5 Leads</span>
+                            </div>
+                            <div class="fin-perf-list" id="perfConnectorList">
+                                <!-- Populated dynamically via JS -->
+                            </div>
+                        </div>
+
+                        <!-- Box 2: Smart Agent (Top 5 Submits) -->
+                        <div class="fin-card fin-perf-card">
+                            <div class="fin-card-head">
+                                <div class="fin-card-brand-title">
+                                    <div class="fin-icon-box bg-blue-light"><i class="fa-solid fa-user-tie text-blue"></i></div>
+                                    <span>Smart Agent</span>
+                                </div>
+                                <span class="fin-perf-tag">Top 5 Submits</span>
+                            </div>
+                            <div class="fin-perf-list" id="perfSmartAgentList">
+                                <!-- Populated dynamically via JS -->
+                            </div>
+                        </div>
+
+                        <!-- Box 3: Super Agent (Top 5 Submits) -->
+                        <div class="fin-card fin-perf-card">
+                            <div class="fin-card-head">
+                                <div class="fin-card-brand-title">
+                                    <div class="fin-icon-box bg-purple-light"><i class="fa-solid fa-shield-halved text-purple"></i></div>
+                                    <span>Super Agent</span>
+                                </div>
+                                <span class="fin-perf-tag">Top 5 Submits</span>
+                            </div>
+                            <div class="fin-perf-list" id="perfSuperAgentList">
+                                <!-- Populated dynamically via JS -->
+                            </div>
+                        </div>
+
+                        <!-- Box 4: Closer (Top 5 Submits) -->
+                        <div class="fin-card fin-perf-card">
+                            <div class="fin-card-head">
+                                <div class="fin-card-brand-title">
+                                    <div class="fin-icon-box bg-amber-light"><i class="fa-solid fa-award text-amber"></i></div>
+                                    <span>Closer</span>
+                                </div>
+                                <span class="fin-perf-tag">Top 5 Submits</span>
+                            </div>
+                            <div class="fin-perf-list" id="perfCloserList">
+                                <!-- Populated dynamically via JS -->
                             </div>
                         </div>
                     </div>
@@ -241,7 +243,7 @@
                                     <div class="fin-icon-box bg-brand-light"><i class="fa-solid fa-bullseye text-brand"></i></div>
                                     <span>My goals</span>
                                 </div>
-                                <div style="display: flex; gap: 0.4rem;">
+                                <div class="btn-group-sm">
                                     <button class="fin-circle-btn" id="btnGoalAdd"><i class="fa-solid fa-plus"></i></button>
                                     <button class="fin-circle-btn"><i class="fa-solid fa-sliders"></i></button>
                                 </div>
@@ -264,7 +266,7 @@
                                     <div class="gauge-center-text">
                                         <span class="gauge-lbl">Target</span>
                                         <strong class="gauge-val" id="gaugeTargetVal">$0.00</strong>
-                                        <span class="gauge-max" id="gaugeMaxVal">/ $0 <i class="fa-solid fa-circle-check" style="color: #00B67A;"></i></span>
+                                        <span class="gauge-max" id="gaugeMaxVal">/ $0 <i class="fa-solid fa-circle-check text-brand"></i></span>
                                     </div>
                                 </div>
                             </div>
@@ -277,7 +279,7 @@
                                         <span class="goal-pct text-red" id="goalChargedPct">54%</span>
                                     </div>
                                     <div class="goal-progress-bar">
-                                        <div class="goal-fill-bar bg-red" id="goalChargedBar" style="width: 54%;"></div>
+                                        <div class="goal-fill-bar bg-red" id="goalChargedBar"></div>
                                     </div>
                                 </div>
 
@@ -287,7 +289,7 @@
                                         <span class="goal-pct text-green" id="goalReceivingPct">78%</span>
                                     </div>
                                     <div class="goal-progress-bar">
-                                        <div class="goal-fill-bar bg-green" id="goalReceivingBar" style="width: 78%;"></div>
+                                        <div class="goal-fill-bar bg-green" id="goalReceivingBar"></div>
                                     </div>
                                 </div>
                             </div>
@@ -339,9 +341,9 @@
                                 </div>
 
                                 <!-- Mini Card 2: Financial Report -->
-                                <div class="fin-card fin-mini-card" id="btnOpenStatementCard" style="cursor: pointer;">
+                                <div class="fin-card fin-mini-card cursor-pointer" id="btnOpenStatementCard">
                                     <div class="mini-icon-doc"><i class="fa-regular fa-file-lines"></i></div>
-                                    <span class="mini-card-sub">Track & Print Report</span>
+                                    <span class="mini-card-sub">Track & Export Report</span>
                                     <h4 class="mini-card-title">Financial Report</h4>
                                 </div>
                             </div>
@@ -366,7 +368,7 @@
                         </div>
 
                         <div class="fin-table-responsive">
-                            <table class="fin-data-table" style="min-width: 900px;">
+                            <table class="fin-data-table fin-data-table-min">
                                 <thead>
                                     <tr>
                                         <th>Date</th>
@@ -375,11 +377,11 @@
                                         <th>Closer</th>
                                         <th>Status</th>
                                         <th>Plan</th>
-                                        <th class="text-right">Monthly</th>
-                                        <th class="text-right">Initial Payment</th>
-                                        <th class="text-right">Approval Amount</th>
-                                        <th class="text-center">Receiving</th>
-                                        <th style="width: 50px; text-align: center;">Action</th>
+                                        <th>Monthly</th>
+                                        <th>Initial<br>Payment</th>
+                                        <th>Approval<br>Amount</th>
+                                        <th>Receiving</th>
+                                        <th class="col-action-cell">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody id="recentClientsTableBody">
@@ -432,9 +434,9 @@
     <div class="modal-backdrop" id="deleteModal" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle">
         <div class="modal-dialog modal-dialog-sm">
             <div class="modal-card">
-                <div class="modal-top-header" style="background-color: #FEF2F2;">
+                <div class="modal-top-header modal-header-danger">
                     <div>
-                        <h2 class="modal-heading-title" style="color: var(--danger);" id="deleteModalTitle">Delete Client</h2>
+                        <h2 class="modal-heading-title text-danger" id="deleteModalTitle">Delete Client</h2>
                         <p class="modal-heading-sub">Confirm permanent record removal</p>
                     </div>
                     <button class="modal-close-icon" id="deleteModalCloseBtn" aria-label="Close modal">
@@ -443,17 +445,17 @@
                 </div>
 
                 <div class="modal-scroll-body">
-                    <p style="font-size: 1rem; color: var(--text-main); margin-bottom: 0.5rem;">
+                    <p class="delete-confirm-text">
                         Are you sure you want to delete <strong id="deleteClientName">this client</strong>?
                     </p>
-                    <p style="font-size: 0.85rem; color: var(--text-muted);">
+                    <p class="delete-confirm-sub">
                         This will remove the record from localStorage and recalculate all financial statistics.
                     </p>
                 </div>
 
                 <div class="modal-action-footer">
                     <button type="button" class="btn-header-export" id="deleteCancelBtn">Cancel</button>
-                    <button type="button" class="btn-header-add" id="deleteConfirmBtn" style="background-color: var(--danger);">
+                    <button type="button" class="btn-header-add btn-danger-action" id="deleteConfirmBtn">
                         <i class="fa-solid fa-trash-can"></i>
                         <span>Delete Client</span>
                     </button>
@@ -465,7 +467,8 @@
     <!-- Toast Notifications Container -->
     <div class="toast-container" id="toastContainer" aria-live="polite" aria-atomic="true"></div>
 
-    <!-- Application Script -->
-    <script src="script.js"></script>
+    <!-- Application Scripts -->
+    <script src="common.js"></script>
+    <script src="dashboard.js"></script>
 </body>
 </html>

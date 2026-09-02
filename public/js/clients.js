@@ -27,12 +27,11 @@ function populateSelectOptions() {
 
     // 2. Inline Table Plans
     if (tblPlan) {
-        tblPlan.innerHTML = '';
+        tblPlan.innerHTML = '<option value="">-- Plan --</option>';
         availablePlans.forEach(months => {
             const optionTbl = document.createElement('option');
             optionTbl.value = months;
             optionTbl.textContent = `${months} ${months === 1 ? 'Month' : 'Months'}`;
-            if (months === 12) optionTbl.selected = true;
             tblPlan.appendChild(optionTbl);
         });
     }
@@ -311,8 +310,8 @@ function renderClientTable() {
                         const calc = calculateApprovalAndResidual(val);
                         const apprEl = tr.querySelector(`#editApproval_${client.id}`);
                         const resEl = tr.querySelector(`#editResidual_${client.id}`);
-                        if (apprEl) apprEl.textContent = formatCurrency(calc.approval);
-                        if (resEl) resEl.textContent = formatCurrency(calc.residual);
+                        if (apprEl) apprEl.innerHTML = formatCurrency(calc.approval);
+                        if (resEl) resEl.innerHTML = formatCurrency(calc.residual);
                     });
                 }
 
@@ -345,7 +344,7 @@ function renderClientTable() {
                     <td>${getSuperAgentBadgeHtml(client.superAgent)}</td>
                     <td>${getCloserBadgeHtml(client.closer)}</td>
                     <td>${getStatusBadgeHtml(client.status)}</td>
-                    <td>${client.plan} ${parseInt(client.plan) === 1 ? 'Month' : 'Months'}</td>
+                    <td>${client.plan ? `${client.plan} ${parseInt(client.plan) === 1 ? 'Month' : 'Months'}` : '<span class="text-muted-dash">-</span>'}</td>
                     <td class="currency-cell">${formatCurrency(client.monthly)}</td>
                     <td class="currency-cell">${formatCurrency(client.initialPayment)}</td>
                     <td>${formatDateDisplay(client.initialPaymentDate)}</td>
@@ -411,9 +410,21 @@ function saveInlineEdit(clientId) {
     const initialDateInp = document.getElementById(`editInitialDate_${clientId}`);
     const receivingInp = document.getElementById(`editReceiving_${clientId}`);
 
-    const monthlyNum = parseFloat(monthlyInp ? monthlyInp.value : 0) || 0;
-    const initialNum = parseFloat(initialInp ? initialInp.value : 0) || 0;
-    const calc = calculateApprovalAndResidual(initialNum);
+    const monthlyNum = (monthlyInp && monthlyInp.value !== '') ? parseFloat(monthlyInp.value) : null;
+    const initialNum = (initialInp && initialInp.value !== '') ? parseFloat(initialInp.value) : null;
+
+    if (initialNum !== null && initialNum < 250) {
+        if (initialInp) {
+            initialInp.classList.add('is-invalid');
+            initialInp.focus();
+        }
+        showToast('error', 'Validation Error', 'Initial Payment must be at least $250.');
+        return;
+    }
+    if (initialInp) initialInp.classList.remove('is-invalid');
+
+    const planVal = (planInp && planInp.value !== '') ? parseInt(planInp.value) : null;
+    const calc = initialNum !== null ? calculateApprovalAndResidual(initialNum) : { approval: null, residual: null };
 
     const clientIdx = state.clients.findIndex(c => c.id === clientId);
     if (clientIdx !== -1) {
@@ -425,14 +436,14 @@ function saveInlineEdit(clientId) {
             smartAgent: smartInp ? smartInp.value : '',
             superAgent: superInp ? superInp.value : '',
             closer: closerInp ? closerInp.value : '',
-            status: statusInp ? statusInp.value : 'Submit',
-            plan: planInp ? parseInt(planInp.value) || 12 : 12,
+            status: statusInp ? statusInp.value : '',
+            plan: planVal,
             monthly: monthlyNum,
             initialPayment: initialNum,
             initialPaymentDate: initialDateInp ? initialDateInp.value : '',
             approvalAmount: calc.approval,
             residual: calc.residual,
-            receiving: receivingInp ? receivingInp.value : 'Pending'
+            receiving: receivingInp ? receivingInp.value : ''
         };
 
         ensureAgentExists('smart', smartInp ? smartInp.value : '');
@@ -440,6 +451,32 @@ function saveInlineEdit(clientId) {
         ensureAgentExists('closer', closerInp ? closerInp.value : '');
 
         saveClients();
+
+        // AJAX update to database API
+        if (window.APP_CONFIG && window.APP_CONFIG.baseUrl) {
+            const formData = new URLSearchParams();
+            formData.append('id', clientId);
+            formData.append('date', state.clients[clientIdx].date);
+            formData.append('clientName', state.clients[clientIdx].clientName);
+            formData.append('connector', state.clients[clientIdx].connector);
+            formData.append('smartAgent', state.clients[clientIdx].smartAgent);
+            formData.append('superAgent', state.clients[clientIdx].superAgent);
+            formData.append('closer', state.clients[clientIdx].closer);
+            formData.append('status', state.clients[clientIdx].status);
+            formData.append('plan', state.clients[clientIdx].plan);
+            formData.append('monthly', state.clients[clientIdx].monthly);
+            formData.append('initialPayment', state.clients[clientIdx].initialPayment);
+            formData.append('initialPaymentDate', state.clients[clientIdx].initialPaymentDate);
+            formData.append('residual', state.clients[clientIdx].residual);
+            formData.append('approvalAmount', state.clients[clientIdx].approvalAmount);
+            formData.append('receiving', state.clients[clientIdx].receiving);
+
+            fetch(`${window.APP_CONFIG.baseUrl}/api/clients/update`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: formData.toString()
+            }).catch(err => console.log('Client update offline sync', err));
+        }
     }
 
     state.editingClientId = null;
@@ -651,8 +688,8 @@ function updateInlineTableCalculations() {
     const paymentVal = tblInitialPayment.value;
     const calc = calculateApprovalAndResidual(paymentVal);
 
-    if (tblApprovalAmount) tblApprovalAmount.textContent = formatCurrency(calc.approval);
-    if (tblResidual) tblResidual.textContent = formatCurrency(calc.residual);
+    if (tblApprovalAmount) tblApprovalAmount.innerHTML = formatCurrency(calc.approval);
+    if (tblResidual) tblResidual.innerHTML = formatCurrency(calc.residual);
 }
 
 function handleInlineSaveClient() {
@@ -685,14 +722,25 @@ function handleInlineSaveClient() {
     const smartAgentVal = tblSmartAgent ? tblSmartAgent.value : '';
     const superAgentVal = tblSuperAgent ? tblSuperAgent.value : '';
     const closerVal = tblCloser ? tblCloser.value : '';
-    const statusVal = tblStatus ? tblStatus.value : 'Submit';
-    const planVal = tblPlan ? parseInt(tblPlan.value) || 12 : 12;
-    const monthlyVal = parseFloat(tblMonthly ? tblMonthly.value : 0) || 0;
-    const initialPaymentVal = parseFloat(tblInitialPayment ? tblInitialPayment.value : 0) || 0;
+    const statusVal = tblStatus ? tblStatus.value : '';
+    const planVal = tblPlan && tblPlan.value ? parseInt(tblPlan.value) : null;
+    const monthlyVal = (tblMonthly && tblMonthly.value !== '') ? parseFloat(tblMonthly.value) : null;
+    const initialPaymentVal = (tblInitialPayment && tblInitialPayment.value !== '') ? parseFloat(tblInitialPayment.value) : null;
+
+    if (initialPaymentVal !== null && initialPaymentVal < 250) {
+        if (tblInitialPayment) {
+            tblInitialPayment.classList.add('is-invalid');
+            tblInitialPayment.focus();
+        }
+        showToast('error', 'Validation Error', 'Initial Payment must be at least $250.');
+        return;
+    }
+    if (tblInitialPayment) tblInitialPayment.classList.remove('is-invalid');
+
     const initialPaymentDateVal = tblInitialPaymentDate ? tblInitialPaymentDate.value : '';
 
-    const calc = calculateApprovalAndResidual(initialPaymentVal);
-    const receivingVal = tblReceiving ? tblReceiving.value : 'Pending';
+    const calc = initialPaymentVal !== null ? calculateApprovalAndResidual(initialPaymentVal) : { approval: null, residual: null };
+    const receivingVal = tblReceiving ? tblReceiving.value : '';
 
     const newClient = {
         id: Date.now(),
@@ -721,6 +769,40 @@ function handleInlineSaveClient() {
     saveClients();
     renderClientTable();
     updateNavBadgeCount();
+
+    // AJAX Create to Database API to get real MySQL ID
+    if (window.APP_CONFIG && window.APP_CONFIG.baseUrl) {
+        const formData = new URLSearchParams();
+        formData.append('date', newClient.date);
+        formData.append('clientName', newClient.clientName);
+        formData.append('connector', newClient.connector);
+        formData.append('smartAgent', newClient.smartAgent);
+        formData.append('superAgent', newClient.superAgent);
+        formData.append('closer', newClient.closer);
+        formData.append('status', newClient.status);
+        formData.append('plan', newClient.plan);
+        formData.append('monthly', newClient.monthly);
+        formData.append('initialPayment', newClient.initialPayment);
+        formData.append('initialPaymentDate', newClient.initialPaymentDate);
+        formData.append('residual', newClient.residual);
+        formData.append('approvalAmount', newClient.approvalAmount);
+        formData.append('receiving', newClient.receiving);
+
+        fetch(`${window.APP_CONFIG.baseUrl}/api/clients/create`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: formData.toString()
+        })
+        .then(res => res.json())
+        .then(res => {
+            if (res && res.id) {
+                newClient.id = Number(res.id);
+                saveClients();
+                renderClientTable();
+            }
+        })
+        .catch(err => console.log('Client create offline sync', err));
+    }
 
     tblClientName.value = '';
     if (tblConnector) tblConnector.value = '';
@@ -761,12 +843,22 @@ function handleDeletePrompt(clientId) {
 function confirmDeleteClient() {
     if (!state.clientToDeleteId) return;
 
-    const index = state.clients.findIndex(c => c.id === state.clientToDeleteId);
+    const delId = state.clientToDeleteId;
+    const index = state.clients.findIndex(c => c.id === delId);
     if (index !== -1) {
         const deleted = state.clients.splice(index, 1)[0];
         saveClients();
         renderClientTable();
         showToast('success', 'Client Deleted', `${deleted.clientName} was successfully removed.`);
+
+        // AJAX Delete from Database API
+        if (window.APP_CONFIG && window.APP_CONFIG.baseUrl) {
+            fetch(`${window.APP_CONFIG.baseUrl}/api/clients/delete`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `id=${delId}`
+            }).catch(err => console.log('Client delete offline sync', err));
+        }
     }
 
     const deleteModal = document.getElementById('deleteModal');

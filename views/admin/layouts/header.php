@@ -1,0 +1,129 @@
+<?php
+/**
+ * Header Layout Template
+ */
+$currentUser = $_SESSION['user'] ?? ($currentUser ?? [
+    'id'        => null,
+    'username'  => 'Guest',
+    'full_name' => 'Guest User',
+    'role'      => 'client_user'
+]);
+
+$role = $currentUser['role'] ?? 'client_user';
+$userInitials = 'U';
+if (!empty($currentUser['full_name'])) {
+    $words = preg_split('/\s+/', trim($currentUser['full_name']));
+    $userInitials = strtoupper(substr($words[0], 0, 1) . (isset($words[1]) ? substr($words[1], 0, 1) : ''));
+} elseif (!empty($currentUser['username'])) {
+    $userInitials = strtoupper(substr($currentUser['username'], 0, 2));
+}
+
+$roleTitles = [
+    'admin'       => 'Administrator',
+    'client_user' => 'Client Manager',
+    'report_user' => 'Reports Manager'
+];
+$displayRoleTitle = $roleTitles[$role] ?? 'User';
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?= e($pageTitle ?? 'Finance Portal CRM') ?></title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Main Stylesheet -->
+    <link rel="stylesheet" href="<?= asset('css/style.css') ?>">
+    <script>
+        window.APP_CONFIG = {
+            baseUrl: '<?= url() ?>',
+            currentUser: <?= json_encode($currentUser ?? null) ?>,
+            databaseClients: <?= !empty($clients) ? json_encode($clients) : '[]' ?>,
+            databaseReports: <?= !empty($records) ? json_encode($records) : '[]' ?>,
+            activeReportSummary: <?= !empty($activeReport) ? json_encode($activeReport) : 'null' ?>,
+            availableWeeks: <?= !empty($availableWeeks) ? json_encode($availableWeeks) : '[]' ?>,
+            activeWeek: <?= !empty($activeWeek) ? json_encode($activeWeek) : 'null' ?>,
+            previousRemaining: <?= isset($previousRemaining) ? (float)$previousRemaining : 0.0 ?>,
+            previousRemainingList: <?= !empty($previousRemainingList) ? json_encode($previousRemainingList) : '[]' ?>,
+            databaseAgents: {
+                smart: <?= (!empty($smartAgents) && is_array($smartAgents)) ? json_encode(array_column($smartAgents, 'name')) : '[]' ?>,
+                super: <?= (!empty($superAgents) && is_array($superAgents)) ? json_encode(array_column($superAgents, 'name')) : '[]' ?>,
+                closer: <?= (!empty($closers) && is_array($closers)) ? json_encode(array_column($closers, 'name')) : '[]' ?>
+            }
+        };
+    </script>
+</head>
+<body>
+    <!-- Master Full-Width App Layout with Topbar Navigation -->
+    <div class="app-canvas">
+        <div class="main-wrapper">
+            <!-- Top Navbar Header -->
+            <header class="top-navbar">
+                <div class="nav-left">
+                    <a href="<?= $role === 'admin' ? url('dashboard') : ($role === 'client_user' ? url('clients') : url('reports')) ?>" class="header-brand">
+                        <div class="brand-icon-leaf">
+                            <i class="fa-solid fa-asterisk"></i>
+                        </div>
+                        <span class="brand-text">Finance Portal</span>
+                    </a>
+                </div>
+
+                <!-- Top Navigation Links (Role-Based Visibility) -->
+                <nav class="top-nav-links">
+                    <?php if ($role === 'admin'): ?>
+                        <a href="<?= url('dashboard') ?>" class="top-nav-item <?= ($activeNav ?? '') === 'dashboard' ? 'active' : '' ?>" id="navDashboard">
+                            <i class="fa-solid fa-table-cells-large"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    <?php endif; ?>
+
+                    <?php if ($role === 'admin' || $role === 'client_user'): ?>
+                        <a href="<?= url('clients') ?>" class="top-nav-item <?= ($activeNav ?? '') === 'clients' ? 'active' : '' ?>" id="navClients">
+                            <i class="fa-solid fa-users"></i>
+                            <span>Client Data</span>
+                            <span class="badge-count" id="navClientCount">0</span>
+                        </a>
+                    <?php endif; ?>
+
+                    <?php if ($role === 'admin' || $role === 'report_user'): ?>
+                        <a href="<?= url('reports') ?>" class="top-nav-item <?= ($activeNav ?? '') === 'reports' ? 'active' : '' ?>" id="navReports">
+                            <i class="fa-solid fa-file-invoice-dollar"></i>
+                            <span>Reports</span>
+                        </a>
+                    <?php endif; ?>
+                </nav>
+
+                <div class="nav-right">
+                    <!-- User Profile Dropdown -->
+                    <div class="user-profile-dropdown" id="userProfileDropdown">
+                        <button class="user-profile-widget user-profile-btn" id="userProfileBtn" aria-expanded="false" aria-haspopup="true">
+                            <div class="user-avatar-img">
+                                <?= e($userInitials) ?>
+                            </div>
+                            <div class="user-meta-text">
+                                <span class="user-meta-name"><?= e($currentUser['full_name'] ?? 'User') ?></span>
+                                <span class="user-meta-title"><?= e($displayRoleTitle) ?></span>
+                            </div>
+                            <i class="fa-solid fa-chevron-down user-dropdown-arrow"></i>
+                        </button>
+
+                        <!-- Profile Dropdown Menu -->
+                        <div class="user-dropdown-menu" id="userDropdownMenu">
+                            <div class="user-dropdown-items">
+                                <a href="<?= url('logout') ?>" class="user-dropdown-item dropdown-logout-btn" id="btnLogout" style="text-decoration:none;">
+                                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                                    <span>Logout</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Page Main Content Area -->
+            <main class="page-content" id="mainContent">

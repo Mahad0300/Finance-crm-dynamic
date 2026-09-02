@@ -1,0 +1,18 @@
+# Environment variables
+.env
+
+# Storage logs & cache & sessions
+storage/logs/*.log
+storage/cache/*
+storage/sessions/*
+
+# Operating System files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE & Editor files
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace

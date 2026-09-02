@@ -15,10 +15,8 @@ const STORAGE_KEYS = {
     CLOSERS: 'crm_closers'
 };
 
-// Configurable Approval Rules
+// Configurable Approval Rules (Applies when Initial Payment >= $250)
 const approvalRules = [
-    { min: 0, max: 99.99, approval: 500 },
-    { min: 100, max: 249.99, approval: 700 },
     { min: 250, max: 400, approval: 900 },
     { min: 400.01, max: 500, approval: 1000 },
     { min: 500.01, max: 100000, approval: 1100 }
@@ -27,218 +25,11 @@ const approvalRules = [
 // Available Plans (1 to 120 Months)
 const availablePlans = Array.from({ length: 120 }, (_, i) => i + 1);
 
-// Default Agent Lists
-const defaultSmartAgents = ['Hamza Khan', 'Ahad', 'Ali', 'Usman'];
-const defaultSuperAgents = ['Zia Uddin', 'KK', 'Ali', 'Usman'];
-const defaultClosers = ['shahab', 'Yasir', 'Ahmed', 'Ali'];
-
-// Initial Sample Clients (12 Records for 10 per page pagination)
-const sampleClients = [
-    {
-        id: 1,
-        date: "2026-09-01",
-        clientName: "LAVERNON EDWARDS",
-        connector: "Zabloon Shamaun",
-        smartAgent: "Hamza Khan",
-        superAgent: "Zia Uddin",
-        closer: "shahab",
-        status: "Submit",
-        plan: 24,
-        monthly: 359.49,
-        initialPayment: 359.49,
-        initialPaymentDate: "2026-09-15",
-        residual: 45.00,
-        approvalAmount: 900.00,
-        receiving: "Pending"
-    },
-    {
-        id: 2,
-        date: "2026-09-01",
-        clientName: "MARLENE DICKERSON",
-        connector: "David Wilson",
-        smartAgent: "Ahad",
-        superAgent: "KK",
-        closer: "Yasir",
-        status: "Charged",
-        plan: 36,
-        monthly: 420.00,
-        initialPayment: 420.00,
-        initialPaymentDate: "2026-09-16",
-        residual: 50.00,
-        approvalAmount: 1000.00,
-        receiving: "Received"
-    },
-    {
-        id: 3,
-        date: "2026-09-02",
-        clientName: "WOLNEY JACKSON",
-        connector: "Sarah Connor",
-        smartAgent: "Ali",
-        superAgent: "Usman",
-        closer: "Ahmed",
-        status: "Kick Back",
-        plan: 12,
-        monthly: 180.50,
-        initialPayment: 180.50,
-        initialPaymentDate: "2026-09-17",
-        residual: 35.00,
-        approvalAmount: 700.00,
-        receiving: "Pending"
-    },
-    {
-        id: 4,
-        date: "2026-09-02",
-        clientName: "ROBERT CHEN",
-        connector: "Michael Scott",
-        smartAgent: "Hamza Khan",
-        superAgent: "KK",
-        closer: "shahab",
-        status: "Charged",
-        plan: 48,
-        monthly: 550.00,
-        initialPayment: 550.00,
-        initialPaymentDate: "2026-09-18",
-        residual: 55.00,
-        approvalAmount: 1100.00,
-        receiving: "Received"
-    },
-    {
-        id: 5,
-        date: "2026-09-03",
-        clientName: "EMILY DAVIS",
-        connector: "Jessica Taylor",
-        smartAgent: "Usman",
-        superAgent: "Zia Uddin",
-        closer: "Yasir",
-        status: "Submit",
-        plan: 18,
-        monthly: 275.00,
-        initialPayment: 275.00,
-        initialPaymentDate: "2026-09-19",
-        residual: 45.00,
-        approvalAmount: 900.00,
-        receiving: "Pending"
-    },
-    {
-        id: 6,
-        date: "2026-09-03",
-        clientName: "DANIEL MARTINEZ",
-        connector: "Alex Turner",
-        smartAgent: "Ahad",
-        superAgent: "Usman",
-        closer: "Ahmed",
-        status: "Charged",
-        plan: 60,
-        monthly: 650.00,
-        initialPayment: 650.00,
-        initialPaymentDate: "2026-09-20",
-        residual: 55.00,
-        approvalAmount: 1100.00,
-        receiving: "Received"
-    },
-    {
-        id: 7,
-        date: "2026-09-04",
-        clientName: "SOPHIA RODRIGUEZ",
-        connector: "Rachel Green",
-        smartAgent: "Ali",
-        superAgent: "KK",
-        closer: "shahab",
-        status: "Submit",
-        plan: 12,
-        monthly: 95.00,
-        initialPayment: 95.00,
-        initialPaymentDate: "2026-09-21",
-        residual: 25.00,
-        approvalAmount: 500.00,
-        receiving: "Received"
-    },
-    {
-        id: 8,
-        date: "2026-09-04",
-        clientName: "JAMES ANDERSON",
-        connector: "Thomas Shelby",
-        smartAgent: "Hamza Khan",
-        superAgent: "Zia Uddin",
-        closer: "Yasir",
-        status: "Charged",
-        plan: 24,
-        monthly: 320.00,
-        initialPayment: 320.00,
-        initialPaymentDate: "2026-09-22",
-        residual: 45.00,
-        approvalAmount: 900.00,
-        receiving: "Received"
-    },
-    {
-        id: 9,
-        date: "2026-09-05",
-        clientName: "OLIVIA THOMAS",
-        connector: "Donna Paulsen",
-        smartAgent: "Usman",
-        superAgent: "Ali",
-        closer: "Ahmed",
-        status: "Kick Back",
-        plan: 36,
-        monthly: 210.00,
-        initialPayment: 210.00,
-        initialPaymentDate: "2026-09-23",
-        residual: 35.00,
-        approvalAmount: 700.00,
-        receiving: "Pending"
-    },
-    {
-        id: 10,
-        date: "2026-09-05",
-        clientName: "WILLIAM WHITE",
-        connector: "Harvey Specter",
-        smartAgent: "Ahad",
-        superAgent: "Zia Uddin",
-        closer: "shahab",
-        status: "Charged",
-        plan: 12,
-        monthly: 480.00,
-        initialPayment: 480.00,
-        initialPaymentDate: "2026-09-24",
-        residual: 50.00,
-        approvalAmount: 1000.00,
-        receiving: "Received"
-    },
-    {
-        id: 11,
-        date: "2026-09-06",
-        clientName: "AVA HERNANDEZ",
-        connector: "Mike Ross",
-        smartAgent: "Ali",
-        superAgent: "KK",
-        closer: "Yasir",
-        status: "Submit",
-        plan: 24,
-        monthly: 150.00,
-        initialPayment: 150.00,
-        initialPaymentDate: "2026-09-25",
-        residual: 35.00,
-        approvalAmount: 700.00,
-        receiving: "Pending"
-    },
-    {
-        id: 12,
-        date: "2026-09-06",
-        clientName: "ETHAN MOORE",
-        connector: "Louis Litt",
-        smartAgent: "Hamza Khan",
-        superAgent: "Usman",
-        closer: "Ahmed",
-        status: "Charged",
-        plan: 48,
-        monthly: 1200.00,
-        initialPayment: 1200.00,
-        initialPaymentDate: "2026-09-26",
-        residual: 55.00,
-        approvalAmount: 1100.00,
-        receiving: "Received"
-    }
-];
+// Dynamic Agent Default Lists (Loaded from Database via APP_CONFIG)
+const defaultSmartAgents = [];
+const defaultSuperAgents = [];
+const defaultClosers = [];
+const sampleClients = [];
 
 // ============================================================================
 // 2. APPLICATION GLOBAL STATE
@@ -260,7 +51,7 @@ const state = {
     },
     sorting: {
         column: null,
-        order: 'desc'
+        order: 'asc'
     },
     pagination: {
         currentPage: 1,
@@ -276,48 +67,55 @@ const state = {
 // ============================================================================
 
 function initStorage() {
-    // 1. Clients
-    const storedClients = localStorage.getItem(STORAGE_KEYS.CLIENTS);
-    if (!storedClients) {
-        state.clients = [...sampleClients];
+    // 1. Clients Live Sync from Database
+    if (window.APP_CONFIG && Array.isArray(window.APP_CONFIG.databaseClients)) {
+        state.clients = window.APP_CONFIG.databaseClients.map(c => ({
+            id: Number(c.id),
+            date: c.date || '',
+            clientName: c.client_name || c.clientName || '',
+            connector: c.connector_name || c.connector || '',
+            smartAgent: c.smart_agent_name || c.smartAgent || '',
+            superAgent: c.super_agent_name || c.superAgent || '',
+            closer: c.closer_name || c.closer || '',
+            status: c.status || '',
+            plan: c.plan ? Number(c.plan) : null,
+            monthly: (c.monthly !== null && c.monthly !== undefined && c.monthly !== '') ? Number(c.monthly) : null,
+            initialPayment: (c.initial_payment !== null && c.initial_payment !== undefined && c.initial_payment !== '') ? Number(c.initial_payment) : null,
+            initialPaymentDate: c.initial_payment_date || c.initialPaymentDate || null,
+            residual: (c.residual !== null && c.residual !== undefined && c.residual !== '') ? Number(c.residual) : null,
+            approvalAmount: (c.approval_amount !== null && c.approval_amount !== undefined && c.approval_amount !== '') ? Number(c.approval_amount) : null,
+            receiving: c.receiving || ''
+        }));
         saveClients();
     } else {
-        try {
-            const parsed = JSON.parse(storedClients);
-            if (Array.isArray(parsed) && parsed.length < 12 && parsed.length <= 4) {
-                state.clients = [...sampleClients];
-                saveClients();
-            } else {
-                state.clients = parsed;
-                // Auto-recalculate approval and residual with active rules, ensure active current month
-                state.clients.forEach(c => {
-                    if (c.date && c.date.startsWith('2026-08')) {
-                        c.date = c.date.replace('2026-08', '2026-09');
-                    }
-                    if (c.initialPaymentDate && c.initialPaymentDate.startsWith('2026-08')) {
-                        c.initialPaymentDate = c.initialPaymentDate.replace('2026-08', '2026-09');
-                    }
-                    if (c.initialPayment !== undefined && c.initialPayment !== null) {
-                        const calc = calculateApprovalAndResidual(c.initialPayment);
-                        if (calc.matched) {
-                            c.approvalAmount = calc.approval;
-                            c.residual = calc.residual;
-                        }
-                    }
-                });
-                saveClients();
+        const storedClients = localStorage.getItem(STORAGE_KEYS.CLIENTS);
+        if (storedClients) {
+            try {
+                state.clients = JSON.parse(storedClients);
+            } catch (e) {
+                state.clients = [];
             }
-        } catch (e) {
-            console.error('Error parsing stored clients, resetting to sample data', e);
-            state.clients = [...sampleClients];
-            saveClients();
+        } else {
+            state.clients = [];
         }
     }
 
-    // 2. Agents
-    state.smartAgents = getStoredList(STORAGE_KEYS.SMART_AGENTS, defaultSmartAgents);
-    state.superAgents = getStoredList(STORAGE_KEYS.SUPER_AGENTS, defaultSuperAgents);
-    state.closers = getStoredList(STORAGE_KEYS.CLOSERS, defaultClosers);
+    // 2. Agents Live Sync from Database
+    if (window.APP_CONFIG && window.APP_CONFIG.databaseAgents) {
+        state.smartAgents = Array.isArray(window.APP_CONFIG.databaseAgents.smart) && window.APP_CONFIG.databaseAgents.smart.length > 0
+            ? window.APP_CONFIG.databaseAgents.smart
+            : getStoredList(STORAGE_KEYS.SMART_AGENTS, []);
+        state.superAgents = Array.isArray(window.APP_CONFIG.databaseAgents.super) && window.APP_CONFIG.databaseAgents.super.length > 0
+            ? window.APP_CONFIG.databaseAgents.super
+            : getStoredList(STORAGE_KEYS.SUPER_AGENTS, []);
+        state.closers = Array.isArray(window.APP_CONFIG.databaseAgents.closer) && window.APP_CONFIG.databaseAgents.closer.length > 0
+            ? window.APP_CONFIG.databaseAgents.closer
+            : getStoredList(STORAGE_KEYS.CLOSERS, []);
+    } else {
+        state.smartAgents = getStoredList(STORAGE_KEYS.SMART_AGENTS, []);
+        state.superAgents = getStoredList(STORAGE_KEYS.SUPER_AGENTS, []);
+        state.closers = getStoredList(STORAGE_KEYS.CLOSERS, []);
+    }
 }
 
 function getStoredList(key, defaultList) {
@@ -348,12 +146,12 @@ function saveAgents(roleKey, list) {
 
 function calculateApprovalAndResidual(paymentVal) {
     if (paymentVal === '' || paymentVal === null || paymentVal === undefined || isNaN(paymentVal)) {
-        return { approval: 0, residual: 0, matched: false, ruleText: 'Enter initial payment' };
+        return { approval: null, residual: null, matched: false, ruleText: 'Enter initial payment' };
     }
 
     const num = parseFloat(paymentVal);
-    if (num < 0) {
-        return { approval: 0, residual: 0, matched: false, ruleText: 'Payment cannot be negative' };
+    if (num < 250) {
+        return { approval: null, residual: null, matched: false, ruleText: 'Payment below $250 has no approval slab' };
     }
 
     // Match configurable approvalRules
@@ -370,8 +168,8 @@ function calculateApprovalAndResidual(paymentVal) {
         };
     } else {
         return {
-            approval: 0,
-            residual: 0,
+            approval: null,
+            residual: null,
             matched: false,
             ruleText: 'No approval rule matched for this range'
         };
@@ -379,8 +177,9 @@ function calculateApprovalAndResidual(paymentVal) {
 }
 
 function formatCurrency(amount) {
-    if (isNaN(amount) || amount === null || amount === undefined || amount === '') return '$0';
+    if (amount === null || amount === undefined || amount === '' || isNaN(amount)) return '<span class="text-muted-dash">-</span>';
     const num = Number(amount);
+    if (num <= 0) return '<span class="text-muted-dash">-</span>';
     if (num % 1 === 0) {
         return '$' + num.toLocaleString('en-US', {
             minimumFractionDigits: 0,
@@ -394,10 +193,10 @@ function formatCurrency(amount) {
 }
 
 function formatDateDisplay(dateStr) {
-    if (!dateStr) return '-';
+    if (!dateStr) return '<span class="text-muted-dash">-</span>';
     try {
         const [year, month, day] = dateStr.split('-');
-        if (!year || !month || !day) return dateStr;
+        if (!year || !month || !day) return escapeHtml(dateStr);
         const dateObj = new Date(year, month - 1, day);
         return dateObj.toLocaleDateString('en-US', {
             month: 'short',
@@ -405,7 +204,7 @@ function formatDateDisplay(dateStr) {
             year: 'numeric'
         });
     } catch (e) {
-        return dateStr;
+        return escapeHtml(dateStr);
     }
 }
 
@@ -431,6 +230,9 @@ function escapeHtml(str) {
 // ============================================================================
 
 function getStatusBadgeHtml(status) {
+    if (!status || status === '-' || status === '') {
+        return `<span class="text-muted-dash">-</span>`;
+    }
     if (status === 'Submit') {
         return `<span class="status-pill pill-submit">Submit</span>`;
     } else if (status === 'Charged') {
@@ -438,14 +240,20 @@ function getStatusBadgeHtml(status) {
     } else if (status === 'Kick Back') {
         return `<span class="status-pill pill-kickback">Kick Back</span>`;
     }
-    return `<span class="status-pill pill-pending">${escapeHtml(status || 'N/A')}</span>`;
+    return `<span class="status-pill pill-pending">${escapeHtml(status)}</span>`;
 }
 
 function getReceivingBadgeHtml(receiving) {
+    if (!receiving || receiving === '-' || receiving === '') {
+        return `<span class="text-muted-dash">-</span>`;
+    }
     if (receiving === 'Received') {
         return `<span class="status-pill pill-received">Received</span>`;
     }
-    return `<span class="status-pill pill-pending">Pending</span>`;
+    if (receiving === 'Pending') {
+        return `<span class="status-pill pill-pending">Pending</span>`;
+    }
+    return `<span class="status-pill pill-pending">${escapeHtml(receiving)}</span>`;
 }
 
 function getSmartAgentBadgeHtml(name) {
@@ -1213,23 +1021,11 @@ function removeToast(toast) {
 
 // Client Statement & Ledger Modal
 function handleViewClient(clientId) {
-    const client = {
-        id: clientId,
-        clientName: "LAVERNON EDWARDS",
-        date: "2026-08-13",
-        plan: 24,
-        receiving: "Received",
-        connector: "Zabloon Shamaun",
-        smartAgent: "Hamza Khan",
-        superAgent: "Zia Uddin",
-        closer: "shahab",
-        status: "Charged",
-        monthly: 359.49,
-        initialPayment: 359.49,
-        residual: 45.00,
-        approvalAmount: 900.00,
-        initialPaymentDate: "2026-09-01"
-    };
+    const client = state.clients.find(c => Number(c.id) === Number(clientId));
+    if (!client) {
+        showToast('error', 'Client Not Found', 'Could not locate client record in database.');
+        return;
+    }
 
     const viewModalBody = document.getElementById('viewModalBody');
     const viewModal = document.getElementById('viewModal');
@@ -1385,22 +1181,7 @@ function exportData() {
 }
 
 function resetSampleData() {
-    if (confirm('Are you sure you want to reset the client database to default sample records? All custom entries will be replaced.')) {
-        state.clients = JSON.parse(JSON.stringify(sampleClients));
-        state.smartAgents = [...defaultSmartAgents];
-        state.superAgents = [...defaultSuperAgents];
-        state.closers = [...defaultClosers];
-
-        saveClients();
-        saveAgents(STORAGE_KEYS.SMART_AGENTS, state.smartAgents);
-        saveAgents(STORAGE_KEYS.SUPER_AGENTS, state.superAgents);
-        saveAgents(STORAGE_KEYS.CLOSERS, state.closers);
-
-        if (typeof populateSelectOptions === 'function') populateSelectOptions();
-        if (typeof renderDashboard === 'function') renderDashboard();
-        if (typeof renderClientTable === 'function') renderClientTable();
-        showToast('success', 'Reset Successful', 'Sample client records restored.');
-    }
+    window.location.reload();
 }
 
 function adjustTableHeight() {

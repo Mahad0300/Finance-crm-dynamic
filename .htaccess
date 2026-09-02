@@ -1,0 +1,5 @@
+RewriteEngine On
+
+# Route everything through the public/ folder
+RewriteCond %{REQUEST_URI} !^/finance-portal/public/
+RewriteRule ^(.*)$ /finance-portal/public/$1 [L,QSA]

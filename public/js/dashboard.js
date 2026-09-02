@@ -33,6 +33,14 @@ function getDefaultDashboardMonth() {
 function getFilteredDashboardClients() {
     if (!state.clients || !Array.isArray(state.clients)) return [];
     
+    if (dashboardDateFilter.mode === 'current-report') {
+        const curMonth = getDefaultDashboardMonth();
+        return state.clients.filter(c => {
+            if (!c.date) return false;
+            return c.date.startsWith(curMonth);
+        });
+    }
+
     if (dashboardDateFilter.mode === 'single-month') {
         const targetMonth = dashboardDateFilter.singleMonth || getDefaultDashboardMonth();
         return state.clients.filter(c => {
@@ -62,7 +70,9 @@ function updateDateFilterTriggerLabel() {
     const elLabel = document.getElementById('dashDateLabel');
     if (!elLabel) return;
 
-    if (dashboardDateFilter.mode === 'single-month') {
+    if (dashboardDateFilter.mode === 'current-report') {
+        elLabel.textContent = 'Current Report';
+    } else if (dashboardDateFilter.mode === 'single-month') {
         const targetMonth = dashboardDateFilter.singleMonth || getDefaultDashboardMonth();
         const monthStr = formatMonthLabel(targetMonth);
         elLabel.textContent = monthStr || 'Current Month';
@@ -136,12 +146,25 @@ function renderDashboard() {
     const elMonthExpense = document.getElementById('finMonthExpense');
     if (elMonthExpense) elMonthExpense.innerHTML = `${displayMonthTitle} <i class="fa-solid fa-chevron-down"></i>`;
 
-    // Card 3: Received Amount
-    const elReceived = document.getElementById('proTotalReceived');
-    if (elReceived) elReceived.textContent = formatCurrency(totalReceived);
+    // Card 3: Received Amount 3-Column Breakdown (Total Receiving, Total Received, Total Remaining)
+    const totalReceiving = totalApproval;
+    const totalRemaining = Math.max(0, totalReceiving - totalReceived);
+    const receivedPercentage = totalReceiving > 0 ? Math.min(100, Math.round((totalReceived / totalReceiving) * 100)) : 0;
 
-    const elExpenseTrend = document.getElementById('expenseTrendText');
-    if (elExpenseTrend) elExpenseTrend.textContent = `${receivedCount} Received (${receivedPct}%), ${pendingCount} Pending`;
+    const elCardReceiving = document.getElementById('proTotalReceiving');
+    if (elCardReceiving) elCardReceiving.textContent = formatCurrency(totalReceiving);
+
+    const elCardReceived = document.getElementById('proTotalReceived');
+    if (elCardReceived) elCardReceived.textContent = formatCurrency(totalReceived);
+
+    const elCardRemaining = document.getElementById('proTotalRemaining');
+    if (elCardRemaining) elCardRemaining.textContent = formatCurrency(totalRemaining);
+
+    const elPctText = document.getElementById('proReceivedPctText');
+    if (elPctText) elPctText.textContent = `${receivedPercentage}%`;
+
+    const elProgressFill = document.getElementById('proReceivedProgressFill');
+    if (elProgressFill) elProgressFill.style.width = `${receivedPercentage}%`;
 
     // Render 4 Performance Leaderboards
     renderPerformanceLeaderboards(clients);
@@ -279,6 +302,8 @@ function setupDashboardDateFilter() {
     const tabBtns = document.querySelectorAll('.date-tab-btn');
     const paneSingle = document.getElementById('paneSingleMonth');
     const paneRange = document.getElementById('paneMonthRange');
+    const paneCurrentReport = document.getElementById('paneCurrentReport');
+    const currentReportActiveMonth = document.getElementById('currentReportActiveMonth');
     const inputSingle = document.getElementById('inputSingleMonth');
     const inputRangeFrom = document.getElementById('inputRangeFrom');
     const inputRangeTo = document.getElementById('inputRangeTo');
@@ -296,6 +321,7 @@ function setupDashboardDateFilter() {
     if (inputSingle) inputSingle.value = defaultYm;
     if (inputRangeFrom && !inputRangeFrom.value) inputRangeFrom.value = `${new Date().getFullYear()}-01`;
     if (inputRangeTo && !inputRangeTo.value) inputRangeTo.value = defaultYm;
+    if (currentReportActiveMonth) currentReportActiveMonth.textContent = `Current Month: ${formatMonthLabel(defaultYm)}`;
 
     let activeMode = 'single-month';
     updateDateFilterTriggerLabel();
@@ -325,6 +351,7 @@ function setupDashboardDateFilter() {
         tabBtns.forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
         if (paneSingle) paneSingle.classList.toggle('active', mode === 'single-month');
         if (paneRange) paneRange.classList.toggle('active', mode === 'month-range');
+        if (paneCurrentReport) paneCurrentReport.classList.toggle('active', mode === 'current-report');
     }
 
     tabBtns.forEach(btn => {
@@ -342,6 +369,8 @@ function setupDashboardDateFilter() {
             } else if (activeMode === 'month-range') {
                 dashboardDateFilter.startMonth = inputRangeFrom ? inputRangeFrom.value : '';
                 dashboardDateFilter.endMonth = inputRangeTo ? inputRangeTo.value : '';
+            } else if (activeMode === 'current-report') {
+                dashboardDateFilter.singleMonth = defaultYm;
             }
             updateDateFilterTriggerLabel();
             renderDashboard();
@@ -395,7 +424,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnOpenAddModal = document.getElementById('btnOpenAddModal');
     if (btnOpenAddModal) {
         btnOpenAddModal.addEventListener('click', () => {
-            window.location.href = 'clients.html?action=add';
+            window.location.href = 'clients?action=add';
         });
     }
 });

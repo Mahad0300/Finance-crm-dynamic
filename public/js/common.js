@@ -563,28 +563,40 @@ function openThFilterPopover(triggerBtn, colKey, colTitle) {
         selectedValues = [rawVal.trim()];
     }
 
+    const isCategory = ['status', 'plan', 'receiving', 'smartAgent', 'superAgent', 'closer', 'connector'].includes(colKey);
+    const isDate = ['date', 'initialPaymentDate'].includes(colKey);
+
     const popover = document.createElement('div');
     popover.className = 'th-filter-popover';
     popover.style.top = `${rect.bottom + 4}px`;
     
-    const popoverWidth = 220;
+    const popoverWidth = isDate ? 250 : 220;
     let leftPos = rect.left - 20;
     if (leftPos + popoverWidth > window.innerWidth - 10) {
         leftPos = window.innerWidth - popoverWidth - 10;
     }
     popover.style.left = `${Math.max(10, leftPos)}px`;
     popover.style.width = `${popoverWidth}px`;
+    if (isDate) popover.classList.add('th-date-popover');
 
-    const isCategory = ['status', 'plan', 'receiving', 'smartAgent', 'superAgent', 'closer', 'connector'].includes(colKey);
-    const isDate = ['date', 'initialPaymentDate'].includes(colKey);
+    let hasActiveFilter = false;
+    if (Array.isArray(rawVal)) {
+        hasActiveFilter = rawVal.length > 0;
+    } else if (rawVal && typeof rawVal === 'object') {
+        hasActiveFilter = (rawVal.mode === 'single' && !!rawVal.date) || 
+                          (rawVal.mode === 'range' && (!!rawVal.from || !!rawVal.to));
+    } else if (typeof rawVal === 'string') {
+        hasActiveFilter = rawVal.trim().length > 0;
+    }
 
     let contentHtml = `
         <div class="th-filter-header">
             <span class="th-filter-title"><i class="fa-solid fa-filter th-filter-icon"></i> Filter ${escapeHtml(colTitle)}</span>
-            ${selectedValues.length > 0 ? `<button type="button" class="th-filter-clear-btn" id="btnThClearFilter">Clear (${selectedValues.length})</button>` : ''}
+            ${hasActiveFilter ? `<button type="button" class="th-filter-clear-btn" id="btnThClearFilter">Clear</button>` : ''}
         </div>
     `;
 
+    let dateMode = 'single';
     if (isCategory) {
         contentHtml += `
             <input type="text" class="th-filter-input" placeholder="Search values..." id="thFilterSearch">
@@ -599,14 +611,43 @@ function openThFilterPopover(triggerBtn, colKey, colTitle) {
             </div>
         `;
     } else if (isDate) {
-        const dateVal = typeof rawVal === 'string' ? rawVal : '';
+        let singleVal = '';
+        let fromVal = '';
+        let toVal = '';
+
+        if (rawVal && typeof rawVal === 'object' && !Array.isArray(rawVal)) {
+            singleVal = rawVal.date || '';
+            fromVal = rawVal.from || '';
+            toVal = rawVal.to || '';
+            dateMode = rawVal.mode || (fromVal || toVal ? 'range' : 'single');
+        } else if (typeof rawVal === 'string' && rawVal.trim()) {
+            singleVal = rawVal.trim();
+        }
+
         contentHtml += `
-            <div class="th-filter-form">
-                <input type="date" class="th-filter-input" id="thFilterInput" value="${dateVal}">
-                <div class="th-filter-btn-row">
-                    <button type="button" class="th-filter-action-btn primary" id="btnThApplyFilter">Apply</button>
-                    <button type="button" class="th-filter-action-btn secondary" id="btnThResetFilter">Clear</button>
+            <div class="th-date-tabs">
+                <button type="button" class="th-date-tab-btn ${dateMode === 'single' ? 'active' : ''}" data-tab="single">Single Date</button>
+                <button type="button" class="th-date-tab-btn ${dateMode === 'range' ? 'active' : ''}" data-tab="range">Date Range</button>
+            </div>
+            <div class="th-date-pane ${dateMode === 'single' ? 'active' : ''}" id="thDatePaneSingle">
+                <label class="th-date-label">Select Date</label>
+                <input type="date" class="th-filter-input" id="thFilterDateSingle" value="${escapeHtml(singleVal)}">
+            </div>
+            <div class="th-date-pane ${dateMode === 'range' ? 'active' : ''}" id="thDatePaneRange">
+                <div class="th-date-range-row">
+                    <div class="th-date-field">
+                        <label class="th-date-label">From Date</label>
+                        <input type="date" class="th-filter-input" id="thFilterDateFrom" value="${escapeHtml(fromVal)}">
+                    </div>
+                    <div class="th-date-field">
+                        <label class="th-date-label">To Date</label>
+                        <input type="date" class="th-filter-input" id="thFilterDateTo" value="${escapeHtml(toVal)}">
+                    </div>
                 </div>
+            </div>
+            <div class="th-filter-btn-row" style="margin-top: 0.35rem;">
+                <button type="button" class="th-filter-action-btn primary" id="btnThApplyDateFilter">Apply</button>
+                <button type="button" class="th-filter-action-btn secondary" id="btnThResetDateFilter">Clear</button>
             </div>
         `;
     } else {
@@ -758,6 +799,53 @@ function openThFilterPopover(triggerBtn, colKey, colTitle) {
 
         renderCategoryList('');
         updateApplyButtonLabel();
+    } else if (isDate) {
+        let activeTab = dateMode;
+        const tabBtns = popover.querySelectorAll('.th-date-tab-btn');
+        const paneSingle = popover.querySelector('#thDatePaneSingle');
+        const paneRange = popover.querySelector('#thDatePaneRange');
+        const inpSingle = popover.querySelector('#thFilterDateSingle');
+        const inpFrom = popover.querySelector('#thFilterDateFrom');
+        const inpTo = popover.querySelector('#thFilterDateTo');
+        const btnApplyDate = popover.querySelector('#btnThApplyDateFilter');
+        const btnResetDate = popover.querySelector('#btnThResetDateFilter');
+
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                activeTab = btn.getAttribute('data-tab');
+                tabBtns.forEach(b => b.classList.toggle('active', b === btn));
+                if (paneSingle) paneSingle.classList.toggle('active', activeTab === 'single');
+                if (paneRange) paneRange.classList.toggle('active', activeTab === 'range');
+            });
+        });
+
+        const doApplyDate = () => {
+            if (activeTab === 'single') {
+                const sDate = inpSingle ? inpSingle.value.trim() : '';
+                if (sDate) {
+                    applyColumnFilter(colKey, { mode: 'single', date: sDate });
+                } else {
+                    applyColumnFilter(colKey, null);
+                }
+            } else {
+                const f = inpFrom ? inpFrom.value.trim() : '';
+                const t = inpTo ? inpTo.value.trim() : '';
+                if (f || t) {
+                    applyColumnFilter(colKey, { mode: 'range', from: f, to: t });
+                } else {
+                    applyColumnFilter(colKey, null);
+                }
+            }
+            closeThFilterPopover();
+        };
+
+        if (btnApplyDate) btnApplyDate.addEventListener('click', doApplyDate);
+        if (btnResetDate) {
+            btnResetDate.addEventListener('click', () => {
+                applyColumnFilter(colKey, null);
+                closeThFilterPopover();
+            });
+        }
     } else {
         const inp = popover.querySelector('#thFilterInput');
         const btnApply = popover.querySelector('#btnThApplyFilter');
@@ -801,7 +889,13 @@ function applyColumnFilter(colKey, value) {
 
     if (isReportsPage && typeof reportsState !== 'undefined') {
         if (!reportsState.columnFilters) reportsState.columnFilters = {};
-        if (Array.isArray(value)) {
+        if (value && typeof value === 'object' && !Array.isArray(value)) {
+            if ((value.mode === 'single' && value.date) || (value.mode === 'range' && (value.from || value.to))) {
+                reportsState.columnFilters[colKey] = value;
+            } else {
+                delete reportsState.columnFilters[colKey];
+            }
+        } else if (Array.isArray(value)) {
             if (value.length > 0) {
                 reportsState.columnFilters[colKey] = value;
                 if (colKey === 'receiving') {
@@ -827,6 +921,8 @@ function applyColumnFilter(colKey, value) {
             } else {
                 delete reportsState.columnFilters[colKey];
             }
+        } else {
+            delete reportsState.columnFilters[colKey];
         }
         if (typeof renderReportsPage === 'function') renderReportsPage();
         updateThFilterIndicators();
@@ -838,7 +934,13 @@ function applyColumnFilter(colKey, value) {
     const filterPlan = document.getElementById('filterPlan');
     const filterReceiving = document.getElementById('filterReceiving');
 
-    if (Array.isArray(value)) {
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+        if ((value.mode === 'single' && value.date) || (value.mode === 'range' && (value.from || value.to))) {
+            state.filters.columnFilters[colKey] = value;
+        } else {
+            delete state.filters.columnFilters[colKey];
+        }
+    } else if (Array.isArray(value)) {
         if (value.length > 0) {
             state.filters.columnFilters[colKey] = value;
             if (colKey === 'status' && filterStatus) filterStatus.value = value.length === 1 ? value[0] : '';
@@ -862,6 +964,8 @@ function applyColumnFilter(colKey, value) {
             if (colKey === 'plan' && filterPlan) filterPlan.value = '';
             if (colKey === 'receiving' && filterReceiving) filterReceiving.value = '';
         }
+    } else {
+        delete state.filters.columnFilters[colKey];
     }
 
     state.pagination.currentPage = 1;
@@ -882,6 +986,17 @@ function updateThFilterIndicators() {
         if (Array.isArray(filterVal) && filterVal.length > 0) {
             btn.classList.add('active');
             btn.title = `Filtered (${filterVal.length} selected): ${filterVal.join(', ')}`;
+        } else if (filterVal && typeof filterVal === 'object') {
+            if (filterVal.mode === 'single' && filterVal.date) {
+                btn.classList.add('active');
+                btn.title = `Filtered by Date: ${filterVal.date}`;
+            } else if (filterVal.mode === 'range' && (filterVal.from || filterVal.to)) {
+                btn.classList.add('active');
+                btn.title = `Filtered by Range: ${filterVal.from || 'Start'} to ${filterVal.to || 'End'}`;
+            } else {
+                btn.classList.remove('active');
+                btn.title = `Filter by ${col}`;
+            }
         } else if (typeof filterVal === 'string' && filterVal.trim()) {
             btn.classList.add('active');
             btn.title = `Filtered by: ${filterVal}`;

@@ -30,13 +30,24 @@ class WeeklyReport extends Model {
         $auditDate = date('Y-m-d', $auditTimestamp);
         $dueDate = date('Y-m-d', $dueTimestamp);
 
+        $baseTimestamp = strtotime('2026-06-01');
+        $diffWeeks = (int)round(($mondayTimestamp - $baseTimestamp) / (7 * 86400));
+        $weekNumber = max(1, $diffWeeks + 1);
+
         $startFormatted = date('M d', $mondayTimestamp);
         $endFormatted = date('M d, Y', $sundayTimestamp);
-        $title = "{$startFormatted} - {$endFormatted}";
+        $dateRange = "{$startFormatted} - {$endFormatted}";
+        $thursdayTimestamp = strtotime('+3 days', $mondayTimestamp);
+        $cycleMonth = date('Y-m', $thursdayTimestamp);
+        $title = "Week {$weekNumber}: {$dateRange}";
 
         return [
+            'week_number'     => $weekNumber,
+            'week_label'      => "Week {$weekNumber}",
+            'date_range'      => $dateRange,
             'start_date'      => $startDate,
             'end_date'        => $endDate,
+            'cycle_month'     => $cycleMonth,
             'title'           => $title,
             'audit_date'      => $auditDate,
             'due_date'        => $dueDate,
@@ -58,6 +69,7 @@ class WeeklyReport extends Model {
         $sql = "SELECT DISTINCT `initial_payment_date` 
                 FROM `clients` 
                 WHERE `status` = 'Charged'
+                  AND `receiving` = 'Received'
                   AND `initial_payment_date` IS NOT NULL 
                   AND `initial_payment_date` != '' 
                   AND `initial_payment_date` != '0000-00-00'
@@ -89,7 +101,7 @@ class WeeklyReport extends Model {
 
     /**
      * Get weekly transactions:
-     * - Only clients with status = 'Charged' are included
+     * - Only clients with status = 'Charged' AND receiving = 'Received' are included
      * - Monday to Sunday (7 days full cycle)
      * - Month 1: New Signups get Upfront Approval Payment (Residual is NULL)
      * - Month 2+: Active Recurring Clients get Monthly Residual (Approval is NULL)
@@ -102,12 +114,13 @@ class WeeklyReport extends Model {
     public function getWeeklyTransactions(string $mondayDate, string $sundayDate): array {
         if (!$this->isConnected()) return [];
 
-        // 1. New Approvals signed up during this Monday-Sunday week (Only Charged)
+        // 1. New Approvals signed up during this Monday-Sunday week (Only Charged & Received)
         $sqlNew = "SELECT `id`, `initial_payment_date` as `date`, `client_name`, `plan`, 
                           `approval_amount` as `approval_payment`, NULL as `residual_payment`, 
                           'Approval Payment' as `payment_type`, `receiving`, `id` as `client_id`
                    FROM `clients`
                    WHERE `status` = 'Charged'
+                     AND `receiving` = 'Received'
                      AND `initial_payment_date` >= :start_date 
                      AND `initial_payment_date` <= :end_date
                    ORDER BY `initial_payment_date` ASC, `id` ASC";
@@ -129,10 +142,11 @@ class WeeklyReport extends Model {
             $curr = strtotime('+1 day', $curr);
         }
 
-        // 3. Recurring Residuals from clients created before this week (Only Charged)
+        // 3. Recurring Residuals from clients created before this week (Only Charged & Received)
         $sqlPast = "SELECT `id`, `initial_payment_date`, `client_name`, `plan`, `residual`, `receiving`
                     FROM `clients`
                     WHERE `status` = 'Charged'
+                      AND `receiving` = 'Received'
                       AND `initial_payment_date` < :start_date 
                       AND `residual` > 0
                     ORDER BY `id` ASC";
@@ -183,22 +197,42 @@ class WeeklyReport extends Model {
 
     /**
      * Get all previous weeks that have an unpaid remaining balance.
+     * If Total Received was 0 or unentered (user forgot to enter), full target carries forward.
      * Returns an array of items: [['title' => '...', 'start_date' => '...', 'remaining' => 345.00], ...]
      */
     public function getPreviousRemainingBreakdown(string $currentStartDate): array {
         if (!$this->isConnected()) return [];
 
-        $sql = "SELECT `id`, `title`, `start_date`, `end_date`, `total_remaining_balance` 
+        $today = date('Y-m-d');
+
+        $sql = "SELECT `id`, `title`, `start_date`, `end_date`, `total_receiving_target`, `total_received_entered`, `total_remaining_balance` 
                 FROM `weekly_reports` 
                 WHERE `start_date` < :start_date 
-                  AND `total_remaining_balance` IS NOT NULL
-                  AND `total_remaining_balance` > 0
+                  AND `end_date` < :today
                 ORDER BY `start_date` ASC";
-        $rows = $this->fetchAll($sql, [':start_date' => $currentStartDate]);
+        $rows = $this->fetchAll($sql, [
+            ':start_date' => $currentStartDate,
+            ':today'      => $today
+        ]);
         
         $breakdown = [];
         foreach ($rows as $r) {
-            $rem = (float)$r['total_remaining_balance'];
+            $target = (float)($r['total_receiving_target'] ?? 0);
+            if ($target <= 0) {
+                $txs = $this->getWeeklyTransactions($r['start_date'], $r['end_date']);
+                foreach ($txs as $t) {
+                    $target += (float)($t['approval_payment'] ?? 0) + (float)($t['residual_payment'] ?? 0);
+                }
+            }
+
+            if ($r['total_remaining_balance'] !== null) {
+                $rem = (float)$r['total_remaining_balance'];
+            } else {
+                // If user entered 0 or forgot to enter, the remaining is target - received
+                $received = $r['total_received_entered'] !== null ? (float)$r['total_received_entered'] : 0.0;
+                $rem = max(0, $target - $received);
+            }
+
             if ($rem > 0) {
                 $breakdown[] = [
                     'id'         => (int)$r['id'],
@@ -281,5 +315,48 @@ class WeeklyReport extends Model {
             ':received'  => $totalReceived,
             ':remaining' => $totalRemaining
         ]) !== null;
+    }
+
+    public function getAllReports(): array {
+        if (!$this->isConnected()) return [];
+        $sql = "SELECT `id`, `title`, `start_date`, `end_date`, `total_receiving_target`, `total_received_entered`, `total_remaining_balance`, `status` 
+                FROM `weekly_reports` 
+                ORDER BY `start_date` DESC";
+        return $this->fetchAll($sql);
+    }
+
+    public function getDashboardWeeklySummaries(): array {
+        if (!$this->isConnected()) return [];
+        $weeks = $this->getAvailableWeeks();
+        $summaries = [];
+        foreach ($weeks as $w) {
+            $txs = $this->getWeeklyTransactions($w['start_date'], $w['end_date']);
+            $approval = 0.0;
+            $residual = 0.0;
+            foreach ($txs as $t) {
+                $approval += (float)($t['approval_payment'] ?? 0);
+                $residual += (float)($t['residual_payment'] ?? 0);
+            }
+            $rep = $this->getOrCreateWeeklyReport($w['start_date'], $w['end_date']);
+            $prevRem = $this->getPreviousRemainingBalance($w['start_date']);
+            $target = $approval + $residual;
+            $entered = $rep['total_received_entered'] !== null ? (float)$rep['total_received_entered'] : 0.0;
+            $rem = max(0, $target - $entered);
+
+            $summaries[$w['start_date']] = [
+                'start_date'      => $w['start_date'],
+                'end_date'        => $w['end_date'],
+                'cycle_month'     => $w['cycle_month'] ?? date('Y-m', strtotime('+3 days', strtotime($w['start_date']))),
+                'title'           => $w['title'],
+                'approval'        => $approval,
+                'residual'        => $residual,
+                'prev_remaining'  => $prevRem,
+                'total_receiving' => $target,
+                'total_received'  => $entered,
+                'total_remaining' => $rem,
+                'transactions'    => $txs
+            ];
+        }
+        return $summaries;
     }
 }

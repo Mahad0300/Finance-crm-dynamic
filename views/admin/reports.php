@@ -10,19 +10,27 @@ require VIEWS_PATH . '/admin/layouts/header.php';
     <div class="page-header-row">
         <div class="title-with-meta">
             <h1 class="page-main-title">
-                Approval & Residual Payments <span class="header-date-plain" id="reportHeaderDate"><?= e($activeWeek['title'] ?? 'Aug 31 - Sep 04, 2026') ?></span>
+                Approval & Residual Payments <span class="header-date-plain" id="reportHeaderDate"><?= e($activeWeek['date_range'] ?? preg_replace('/^Week\s+\d+:\s*/i', '', $activeWeek['title'] ?? '') ?: 'Aug 31 - Sep 06, 2026') ?></span>
             </h1>
         </div>
 
         <div class="header-action-buttons">
-            <!-- Sleek Date / Week Navigation & Filter Dropdown -->
+            <!-- Sleek Date / Week Navigation & Custom Dropdown -->
             <div class="report-week-nav-group">
                 <button type="button" class="btn-report-nav" id="btnPrevWeek" title="Previous Week">
                     <i class="fa-solid fa-chevron-left"></i>
                 </button>
-                <div class="report-week-select-wrapper">
-                    <i class="fa-regular fa-calendar-days text-brand"></i>
-                    <select id="selectWeeklyCycle" class="report-week-dropdown" aria-label="Select Report Week">
+
+                <!-- Custom Elegant Dropdown Wrapper -->
+                <div class="report-week-custom-dropdown" id="reportWeekCustomDropdown">
+                    <button type="button" class="btn-week-dropdown-trigger" id="btnWeekDropdownTrigger" aria-expanded="false" aria-haspopup="true">
+                        <i class="fa-regular fa-calendar-days text-brand"></i>
+                        <span id="currentWeekTriggerText" class="week-trigger-label"><?= e($activeWeek['title'] ?? 'Select Week') ?></span>
+                        <i class="fa-solid fa-chevron-down week-trigger-caret"></i>
+                    </button>
+
+                    <!-- Hidden native select for form & code compatibility -->
+                    <select id="selectWeeklyCycle" style="display: none;" aria-label="Select Report Week">
                         <?php if (!empty($availableWeeks)): ?>
                             <?php foreach ($availableWeeks as $w): ?>
                                 <option value="<?= $w['start_date'] ?>" <?= ($activeWeek && $activeWeek['start_date'] === $w['start_date']) ? 'selected' : '' ?>>
@@ -35,7 +43,25 @@ require VIEWS_PATH . '/admin/layouts/header.php';
                             </option>
                         <?php endif; ?>
                     </select>
+
+                    <!-- Custom Floating Dropdown Menu -->
+                    <div class="week-dropdown-menu" id="weekDropdownMenu">
+                        <div class="week-dropdown-scroll">
+                            <?php if (!empty($availableWeeks)): ?>
+                                <?php foreach ($availableWeeks as $w): ?>
+                                    <?php $isSelected = ($activeWeek && $activeWeek['start_date'] === $w['start_date']); ?>
+                                    <div class="week-dropdown-item <?= $isSelected ? 'selected' : '' ?>" data-date="<?= $w['start_date'] ?>" data-title="<?= e($w['title']) ?>">
+                                        <div class="week-item-info">
+                                            <span class="week-pill-badge"><?= e($w['week_label'] ?? 'Week') ?></span>
+                                            <span class="week-item-title"><?= e($w['date_range'] ?? $w['title']) ?></span>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </div>
+                    </div>
                 </div>
+
                 <button type="button" class="btn-report-nav" id="btnNextWeek" title="Next Week">
                     <i class="fa-solid fa-chevron-right"></i>
                 </button>
@@ -44,7 +70,7 @@ require VIEWS_PATH . '/admin/layouts/header.php';
             <button class="btn-header-export" id="btnExportCombinedReport">
                 <i class="fa-solid fa-arrow-up-from-bracket"></i>
                 <span>Export</span>
-            </button>
+            </button>  
         </div>
     </div>
 

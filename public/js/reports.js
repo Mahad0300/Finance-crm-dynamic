@@ -53,12 +53,13 @@ function renderCombinedReportsTable() {
                 const bannerTr = document.createElement('tr');
                 bannerTr.className = 'prev-remaining-banner-row prev-remaining-clickable';
                 bannerTr.setAttribute('title', `Click to open report for ${item.title}`);
+                const cleanItemTitle = (item.date_range || item.title || '').replace(/^Week\s+\d+:\s*/i, '');
                 bannerTr.innerHTML = `
                     <td colspan="6" class="prev-remaining-banner-cell">
                         <div class="prev-remaining-alert-content">
                             <div class="prev-remaining-left">
                                 <span class="prev-remaining-icon-badge"><i class="fa-solid fa-clock-rotate-left"></i></span>
-                                <span class="prev-remaining-label font-bold">Previous Week Remaining Balance Carried Forward ${escapeHtml(item.title)}</span>
+                                <span class="prev-remaining-label font-bold">Previous Week Remaining Balance Carried Forward ${escapeHtml(cleanItemTitle)}</span>
                                 <span class="prev-remaining-link-hint" title="View report"><i class="fa-solid fa-arrow-up-right-from-square"></i></span>
                             </div>
                             <div class="prev-remaining-right">
@@ -176,13 +177,8 @@ function updateCombinedTotals() {
     const totalResidualDue = clients.reduce((sum, c) => sum + (parseFloat(c.residual) || 0), 0);
     const thisWeekReceiving = totalApprovalDue + totalResidualDue;
 
-    let prevRemaining = 0;
-    if (window.APP_CONFIG && Array.isArray(window.APP_CONFIG.previousRemainingList) && window.APP_CONFIG.previousRemainingList.length > 0) {
-        prevRemaining = window.APP_CONFIG.previousRemainingList.reduce((sum, item) => sum + (parseFloat(item.remaining) || 0), 0);
-    } else if (window.APP_CONFIG && window.APP_CONFIG.previousRemaining) {
-        prevRemaining = parseFloat(window.APP_CONFIG.previousRemaining) || 0;
-    }
-    const totalReceivingTarget = thisWeekReceiving + prevRemaining;
+    // Report Total Receiving strictly reflects this specific report's fresh target (Approval + Residual)
+    const totalReceivingTarget = thisWeekReceiving;
 
     const inputTotalReceived = document.getElementById('inputTotalReceived');
     const enteredReceivedVal = (inputTotalReceived && inputTotalReceived.value !== '') 
@@ -202,6 +198,17 @@ function updateCombinedTotals() {
     if (tfootCombinedClientCount) tfootCombinedClientCount.textContent = `${clients.length} Clients`;
     if (tfootTotalReceivingTarget) tfootTotalReceivingTarget.innerHTML = formatCurrency(totalReceivingTarget);
     if (tfootTotalRemaining) tfootTotalRemaining.innerHTML = formatCurrency(totalRemaining);
+
+    // Auto-sync totals if they changed
+    if (window.APP_CONFIG && window.APP_CONFIG.activeReportSummary) {
+        const summary = window.APP_CONFIG.activeReportSummary;
+        if (summary.id && (Number(summary.total_receiving_target) !== Number(totalReceivingTarget) || Number(summary.total_remaining_balance) !== Number(totalRemaining))) {
+            summary.total_receiving_target = totalReceivingTarget;
+            summary.total_remaining_balance = totalRemaining;
+            summary.total_received_entered = enteredReceivedVal;
+            syncFooterWithDatabase();
+        }
+    }
 }
 
 // ============================================================================
@@ -220,13 +227,7 @@ function doSyncFooter() {
     const totalResidualDue = clients.reduce((sum, c) => sum + (parseFloat(c.residual) || 0), 0);
     const thisWeekReceiving = totalApprovalDue + totalResidualDue;
 
-    let prevRemaining = 0;
-    if (window.APP_CONFIG && Array.isArray(window.APP_CONFIG.previousRemainingList) && window.APP_CONFIG.previousRemainingList.length > 0) {
-        prevRemaining = window.APP_CONFIG.previousRemainingList.reduce((sum, item) => sum + (parseFloat(item.remaining) || 0), 0);
-    } else if (window.APP_CONFIG && window.APP_CONFIG.previousRemaining) {
-        prevRemaining = parseFloat(window.APP_CONFIG.previousRemaining) || 0;
-    }
-    const totalTarget = thisWeekReceiving + prevRemaining;
+    const totalTarget = thisWeekReceiving;
 
     const enteredVal = inputTotalReceived && inputTotalReceived.value !== '' ? parseFloat(inputTotalReceived.value) || 0 : 0;
     const remaining = Math.max(0, totalTarget - enteredVal);
@@ -286,11 +287,12 @@ function switchWeeklyCycle(startDate) {
                 combinedReportClients = null;
 
                 // Update UI Header and Banner
+                const cleanDateText = data.week.date_range || (data.week.title ? data.week.title.replace(/^Week\s+\d+:\s*/i, '') : '');
                 const reportHeaderDate = document.getElementById('reportHeaderDate');
-                if (reportHeaderDate) reportHeaderDate.textContent = data.week.title;
+                if (reportHeaderDate) reportHeaderDate.textContent = cleanDateText;
 
                 const bannerWorkWeek = document.getElementById('bannerWorkWeek');
-                if (bannerWorkWeek) bannerWorkWeek.textContent = data.week.title;
+                if (bannerWorkWeek) bannerWorkWeek.textContent = cleanDateText;
 
                 const bannerAuditDate = document.getElementById('bannerAuditDate');
                 if (bannerAuditDate) bannerAuditDate.textContent = data.week.audit_formatted;
@@ -306,9 +308,20 @@ function switchWeeklyCycle(startDate) {
                         : '';
                 }
 
-                // Sync select dropdown
+                // Sync select dropdown & custom dropdown UI
                 const selectWeeklyCycle = document.getElementById('selectWeeklyCycle');
                 if (selectWeeklyCycle) selectWeeklyCycle.value = data.week.start_date;
+
+                const currentWeekTriggerText = document.getElementById('currentWeekTriggerText');
+                if (currentWeekTriggerText) currentWeekTriggerText.textContent = data.week.title;
+
+                document.querySelectorAll('.week-dropdown-item').forEach(el => {
+                    if (el.getAttribute('data-date') === data.week.start_date) {
+                        el.classList.add('selected');
+                    } else {
+                        el.classList.remove('selected');
+                    }
+                });
 
                 renderCombinedReportsTable();
             }
@@ -330,13 +343,14 @@ function updateReportLiveHeaderDate() {
     const el = document.getElementById('reportHeaderDate');
     if (!el) return;
     
-    if (window.APP_CONFIG && window.APP_CONFIG.activeWeek && window.APP_CONFIG.activeWeek.title) {
-        el.textContent = window.APP_CONFIG.activeWeek.title;
+    if (window.APP_CONFIG && window.APP_CONFIG.activeWeek) {
+        const w = window.APP_CONFIG.activeWeek;
+        el.textContent = w.date_range || (w.title ? w.title.replace(/^Week\s+\d+:\s*/i, '') : '');
         return;
     }
 
     if (window.APP_CONFIG && window.APP_CONFIG.activeReportSummary && window.APP_CONFIG.activeReportSummary.title) {
-        el.textContent = window.APP_CONFIG.activeReportSummary.title;
+        el.textContent = window.APP_CONFIG.activeReportSummary.title.replace(/^Week\s+\d+:\s*/i, '');
         return;
     }
 }
@@ -355,7 +369,42 @@ function initReportsPage() {
 
     renderCombinedReportsTable();
 
-    // Weekly Cycle Dropdown Change Listener
+    // Custom Week Dropdown Trigger and Item handlers
+    const dropdownWrapper = document.getElementById('reportWeekCustomDropdown');
+    const btnTrigger = document.getElementById('btnWeekDropdownTrigger');
+
+    if (btnTrigger && dropdownWrapper) {
+        btnTrigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdownWrapper.classList.toggle('open');
+        });
+    }
+
+    document.querySelectorAll('.week-dropdown-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const dateVal = item.getAttribute('data-date');
+            const titleVal = item.getAttribute('data-title');
+            
+            const currentWeekTriggerText = document.getElementById('currentWeekTriggerText');
+            if (currentWeekTriggerText && titleVal) currentWeekTriggerText.textContent = titleVal;
+
+            const selectWeeklyCycle = document.getElementById('selectWeeklyCycle');
+            if (selectWeeklyCycle) selectWeeklyCycle.value = dateVal;
+
+            if (dropdownWrapper) dropdownWrapper.classList.remove('open');
+
+            switchWeeklyCycle(dateVal);
+        });
+    });
+
+    document.addEventListener('click', (e) => {
+        if (dropdownWrapper && !dropdownWrapper.contains(e.target)) {
+            dropdownWrapper.classList.remove('open');
+        }
+    });
+
+    // Weekly Cycle Dropdown Change Listener (native fallback)
     const selectWeeklyCycle = document.getElementById('selectWeeklyCycle');
     if (selectWeeklyCycle) {
         selectWeeklyCycle.addEventListener('change', (e) => {

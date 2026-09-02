@@ -127,6 +127,27 @@ function getFilteredAndSortedClients() {
                 continue;
             }
 
+            // Object Date Filter (Single Date or Range)
+            if (typeof filterVal === 'object' && !Array.isArray(filterVal)) {
+                let targetDate = '';
+                if (colKey === 'date') targetDate = c.date || '';
+                else if (colKey === 'initialPaymentDate') targetDate = c.initialPaymentDate || c.date || '';
+
+                targetDate = targetDate.substring(0, 10);
+                if (!targetDate) return false;
+
+                if (filterVal.mode === 'single') {
+                    if (!filterVal.date) continue;
+                    if (targetDate !== filterVal.date) return false;
+                } else if (filterVal.mode === 'range') {
+                    const from = filterVal.from || '';
+                    const to = filterVal.to || '';
+                    if (from && targetDate < from) return false;
+                    if (to && targetDate > to) return false;
+                }
+                continue;
+            }
+
             // Text/Date/Number String Filter
             const fVal = String(filterVal).trim().toLowerCase();
             if (!fVal) continue;

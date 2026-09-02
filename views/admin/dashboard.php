@@ -55,8 +55,29 @@ require VIEWS_PATH . '/admin/layouts/header.php';
                         </div>
                     </div>
 
-                    <!-- Pane 3: Current Report -->
-                    <div class="date-tab-pane" id="paneCurrentReport"></div>
+                    <!-- Pane 3: Current Report / Weekly Cycle -->
+                    <div class="date-tab-pane" id="paneCurrentReport">
+                        <label class="date-pane-label">Select Weekly Report</label>
+                        <div class="dash-week-select-list" id="dashWeekSelectList">
+                            <?php if (!empty($availableWeeks)): ?>
+                                <?php foreach ($availableWeeks as $idx => $w): ?>
+                                    <div class="dash-week-item" 
+                                         data-start="<?= $w['start_date'] ?>" 
+                                         data-end="<?= $w['end_date'] ?>" 
+                                         data-title="<?= e($w['title']) ?>"
+                                         data-label="<?= e($w['week_label'] ?? 'Week') ?>"
+                                         data-range="<?= e($w['date_range'] ?? $w['title']) ?>">
+                                        <div class="dash-week-item-left">
+                                            <span class="week-pill-badge"><?= e($w['week_label'] ?? 'Week') ?></span>
+                                            <span class="dash-week-date-text"><?= e($w['date_range'] ?? $w['title']) ?></span>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <p class="text-muted text-center" style="padding: 12px; font-size: 0.8rem;">No weekly reports available.</p>
+                            <?php endif; ?>
+                        </div>
+                    </div>
 
                     <!-- Footer Actions -->
                     <div class="date-popover-footer">

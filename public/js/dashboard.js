@@ -12,7 +12,8 @@ let dashboardDateFilter = {
     mode: 'single-month', // Default to single month
     singleMonth: '',      // e.g. '2026-08'
     startMonth: '',       // e.g. '2026-01'
-    endMonth: ''          // e.g. '2026-12'
+    endMonth: '',         // e.g. '2026-12'
+    selectedWeek: null    // { start_date, end_date, title, week_label, date_range }
 };
 
 function formatMonthLabel(yyyyMm) {
@@ -25,6 +26,22 @@ function formatMonthLabel(yyyyMm) {
     return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
 }
 
+function formatMoney(amount) {
+    if (amount === null || amount === undefined || amount === '' || isNaN(amount)) return '$0';
+    const num = Number(amount);
+    if (num === 0) return '$0';
+    if (num % 1 === 0) {
+        return '$' + num.toLocaleString('en-US', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        });
+    }
+    return '$' + num.toLocaleString('en-US', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+    });
+}
+
 function getDefaultDashboardMonth() {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -34,18 +51,26 @@ function getFilteredDashboardClients() {
     if (!state.clients || !Array.isArray(state.clients)) return [];
     
     if (dashboardDateFilter.mode === 'current-report') {
-        const curMonth = getDefaultDashboardMonth();
+        const sw = dashboardDateFilter.selectedWeek || (window.APP_CONFIG?.availableWeeks ? window.APP_CONFIG.availableWeeks[0] : null);
+        if (!sw) return state.clients;
+
         return state.clients.filter(c => {
-            if (!c.date) return false;
-            return c.date.startsWith(curMonth);
+            const submitDate = c.date;
+            const chargeDate = c.initialPaymentDate || c.initial_payment_date || c.date;
+            const inWeekBySubmit = submitDate && submitDate >= sw.start_date && submitDate <= sw.end_date;
+            const inWeekByCharge = chargeDate && chargeDate >= sw.start_date && chargeDate <= sw.end_date;
+            return inWeekBySubmit || inWeekByCharge;
         });
     }
 
     if (dashboardDateFilter.mode === 'single-month') {
         const targetMonth = dashboardDateFilter.singleMonth || getDefaultDashboardMonth();
         return state.clients.filter(c => {
-            if (!c.date) return false;
-            return c.date.startsWith(targetMonth);
+            const submitDate = c.date;
+            const chargeDate = c.initialPaymentDate || c.initial_payment_date || c.date;
+            const inMonthBySubmit = submitDate && submitDate.startsWith(targetMonth);
+            const inMonthByCharge = chargeDate && chargeDate.startsWith(targetMonth);
+            return inMonthBySubmit || inMonthByCharge;
         });
     }
 
@@ -55,11 +80,11 @@ function getFilteredDashboardClients() {
         if (!from && !to) return state.clients;
 
         return state.clients.filter(c => {
-            if (!c.date) return false;
-            const clientMonth = c.date.substring(0, 7);
-            if (from && clientMonth < from) return false;
-            if (to && clientMonth > to) return false;
-            return true;
+            const submitDate = c.date ? c.date.substring(0, 7) : '';
+            const chargeDate = (c.initialPaymentDate || c.initial_payment_date || c.date || '').substring(0, 7);
+            const inRangeBySubmit = submitDate && (!from || submitDate >= from) && (!to || submitDate <= to);
+            const inRangeByCharge = chargeDate && (!from || chargeDate >= from) && (!to || chargeDate <= to);
+            return inRangeBySubmit || inRangeByCharge;
         });
     }
 
@@ -71,7 +96,12 @@ function updateDateFilterTriggerLabel() {
     if (!elLabel) return;
 
     if (dashboardDateFilter.mode === 'current-report') {
-        elLabel.textContent = 'Current Report';
+        const sw = dashboardDateFilter.selectedWeek || (window.APP_CONFIG?.availableWeeks ? window.APP_CONFIG.availableWeeks[0] : null);
+        if (sw) {
+            elLabel.textContent = sw.title || `${sw.week_label || 'Week'}: ${sw.date_range}`;
+        } else {
+            elLabel.textContent = 'Weekly Report';
+        }
     } else if (dashboardDateFilter.mode === 'single-month') {
         const targetMonth = dashboardDateFilter.singleMonth || getDefaultDashboardMonth();
         const monthStr = formatMonthLabel(targetMonth);
@@ -102,43 +132,120 @@ function renderDashboard() {
     const clients = getFilteredDashboardClients();
     const total = clients.length;
 
-    // 1. Total Submit Amount
-    const submittedClients = clients.filter(c => c.status === 'Submit');
+    // 1. Total Submit Amount (All deals submitted in this period: Submit + Charged)
+    const submittedClients = clients.filter(c => c.status === 'Submit' || c.status === 'Charged');
     const totalSubmitAmount = submittedClients.reduce((sum, c) => sum + (parseFloat(c.approvalAmount) || parseFloat(c.initialPayment) || 0), 0);
     const submitCount = submittedClients.length;
 
-    // 2. Total Approval Amount & 5% Residual
-    const totalApproval = clients.reduce((sum, c) => sum + (parseFloat(c.approvalAmount) || 0), 0);
-    const totalResidual = clients.reduce((sum, c) => sum + (parseFloat(c.residual) || 0), 0);
+    // 2. Charged Clients (Only Charged & Received)
+    const chargedClients = clients.filter(c => c.status === 'Charged' && (String(c.receiving || '').toLowerCase() === 'received' || c.receiving === 1 || c.receiving === true));
 
-    // 3. Total Received Amount
-    const receivedClients = clients.filter(c => c.receiving === 'Received');
-    const totalReceived = receivedClients.reduce((sum, c) => sum + (parseFloat(c.approvalAmount) || 0), 0);
-    const receivedCount = receivedClients.length;
+    // 3. Approval Amount, Residual, Total Receiving, Total Received, Total Remaining
+    let totalApproval = 0;
+    let totalResidual = 0;
+    let totalReceiving = 0;
+    let totalReceived = 0;
+    let totalRemaining = 0;
 
-    const pendingClients = clients.filter(c => c.receiving === 'Pending');
-    const pendingCount = pendingClients.length;
+    const summaries = window.APP_CONFIG?.dashboardWeeklySummaries || {};
+    const weeklyReports = (window.APP_CONFIG && Array.isArray(window.APP_CONFIG.weeklyReports)) 
+        ? window.APP_CONFIG.weeklyReports 
+        : [];
 
-    const receivedPct = total > 0 ? Math.round((receivedCount / total) * 100) : 0;
+    let perfClients = clients;
+
+    if (dashboardDateFilter.mode === 'current-report') {
+        const sw = dashboardDateFilter.selectedWeek || (window.APP_CONFIG?.availableWeeks ? window.APP_CONFIG.availableWeeks[0] : null);
+        const wSummary = sw && summaries[sw.start_date] ? summaries[sw.start_date] : null;
+
+        if (wSummary) {
+            totalApproval = parseFloat(wSummary.approval) || 0;
+            totalResidual = parseFloat(wSummary.residual) || 0;
+            totalReceiving = parseFloat(wSummary.total_receiving) || 0;
+            totalReceived = parseFloat(wSummary.total_received) || 0;
+            totalRemaining = parseFloat(wSummary.total_remaining) || 0;
+
+            if (Array.isArray(wSummary.transactions) && wSummary.transactions.length > 0) {
+                const txClientIds = new Set(wSummary.transactions.map(t => Number(t.client_id || t.id)));
+                perfClients = state.clients.filter(c => txClientIds.has(Number(c.id)));
+            }
+        } else {
+            const targetReport = sw ? weeklyReports.find(r => r.start_date === sw.start_date) : weeklyReports[0];
+            if (targetReport) {
+                totalReceiving = parseFloat(targetReport.total_receiving_target) || 0;
+                totalReceived = (targetReport.total_received_entered !== null) ? (parseFloat(targetReport.total_received_entered) || 0) : 0;
+                totalRemaining = (targetReport.total_remaining_balance !== null) ? (parseFloat(targetReport.total_remaining_balance) || 0) : Math.max(0, totalReceiving - totalReceived);
+            }
+        }
+    } else if (dashboardDateFilter.mode === 'single-month') {
+        const targetMonth = dashboardDateFilter.singleMonth || getDefaultDashboardMonth();
+        const monthSummaries = Object.values(summaries).filter(s => {
+            if (s.cycle_month) return s.cycle_month === targetMonth;
+            return (s.start_date && s.start_date.startsWith(targetMonth)) || (s.end_date && s.end_date.startsWith(targetMonth));
+        });
+
+        if (monthSummaries.length > 0) {
+            totalApproval = monthSummaries.reduce((sum, s) => sum + (parseFloat(s.approval) || 0), 0);
+            totalResidual = monthSummaries.reduce((sum, s) => sum + (parseFloat(s.residual) || 0), 0);
+            totalReceiving = monthSummaries.reduce((sum, s) => sum + (parseFloat(s.total_receiving) || 0), 0);
+            totalReceived = monthSummaries.reduce((sum, s) => sum + (parseFloat(s.total_received) || 0), 0);
+            totalRemaining = monthSummaries.reduce((sum, s) => sum + (parseFloat(s.total_remaining) || 0), 0);
+        } else {
+            totalApproval = chargedClients.reduce((sum, c) => sum + (parseFloat(c.approvalAmount) || 0), 0);
+            totalResidual = chargedClients.reduce((sum, c) => sum + (parseFloat(c.residual) || 0), 0);
+            totalReceiving = totalApproval + totalResidual;
+            totalReceived = 0;
+            totalRemaining = totalReceiving;
+        }
+    } else if (dashboardDateFilter.mode === 'month-range') {
+        const from = dashboardDateFilter.startMonth;
+        const to = dashboardDateFilter.endMonth;
+        const rangeSummaries = Object.values(summaries).filter(s => {
+            const m = s.cycle_month || (s.start_date ? s.start_date.substring(0, 7) : '');
+            if (from && m < from) return false;
+            if (to && m > to) return false;
+            return true;
+        });
+
+        if (rangeSummaries.length > 0) {
+            totalApproval = rangeSummaries.reduce((sum, s) => sum + (parseFloat(s.approval) || 0), 0);
+            totalResidual = rangeSummaries.reduce((sum, s) => sum + (parseFloat(s.residual) || 0), 0);
+            totalReceiving = rangeSummaries.reduce((sum, s) => sum + (parseFloat(s.total_receiving) || 0), 0);
+            totalReceived = rangeSummaries.reduce((sum, s) => sum + (parseFloat(s.total_received) || 0), 0);
+            totalRemaining = rangeSummaries.reduce((sum, s) => sum + (parseFloat(s.total_remaining) || 0), 0);
+        } else {
+            totalApproval = chargedClients.reduce((sum, c) => sum + (parseFloat(c.approvalAmount) || 0), 0);
+            totalResidual = chargedClients.reduce((sum, c) => sum + (parseFloat(c.residual) || 0), 0);
+            totalReceiving = totalApproval + totalResidual;
+            totalReceived = 0;
+            totalRemaining = totalReceiving;
+        }
+    }
+
+    const receivedPercentage = totalReceiving > 0 
+        ? Math.min(100, Math.round((totalReceived / totalReceiving) * 100)) 
+        : 0;
 
     // Card 1: Total Submit
     const elSubmit = document.getElementById('proTotalSubmit');
-    if (elSubmit) elSubmit.textContent = formatCurrency(totalSubmitAmount);
+    if (elSubmit) elSubmit.textContent = formatMoney(totalSubmitAmount);
 
     // Card 2: Approval Amount
     const elApproval = document.getElementById('proTotalApproval');
-    if (elApproval) elApproval.textContent = formatCurrency(totalApproval);
+    if (elApproval) elApproval.textContent = formatMoney(totalApproval);
 
     const elResidualTag = document.getElementById('proResidualTag');
-    if (elResidualTag) elResidualTag.textContent = formatCurrency(totalResidual);
+    if (elResidualTag) elResidualTag.textContent = formatMoney(totalResidual);
 
-    // Dynamic Filter Month in Card Headers
+    // Dynamic Filter Title
     let displayMonthTitle = 'CURRENT MONTH';
     if (dashboardDateFilter.mode === 'single-month') {
         const m = dashboardDateFilter.singleMonth || getDefaultDashboardMonth();
         displayMonthTitle = formatMonthLabel(m).toUpperCase();
     } else if (dashboardDateFilter.mode === 'month-range') {
         displayMonthTitle = 'FILTERED RANGE';
+    } else if (dashboardDateFilter.mode === 'current-report') {
+        displayMonthTitle = 'WEEKLY REPORT';
     }
 
     const elMonthIncome = document.getElementById('finMonthIncome');
@@ -146,19 +253,15 @@ function renderDashboard() {
     const elMonthExpense = document.getElementById('finMonthExpense');
     if (elMonthExpense) elMonthExpense.innerHTML = `${displayMonthTitle} <i class="fa-solid fa-chevron-down"></i>`;
 
-    // Card 3: Received Amount 3-Column Breakdown (Total Receiving, Total Received, Total Remaining)
-    const totalReceiving = totalApproval;
-    const totalRemaining = Math.max(0, totalReceiving - totalReceived);
-    const receivedPercentage = totalReceiving > 0 ? Math.min(100, Math.round((totalReceived / totalReceiving) * 100)) : 0;
-
+    // Card 3: Received Amount Breakdown
     const elCardReceiving = document.getElementById('proTotalReceiving');
-    if (elCardReceiving) elCardReceiving.textContent = formatCurrency(totalReceiving);
+    if (elCardReceiving) elCardReceiving.textContent = formatMoney(totalReceiving);
 
     const elCardReceived = document.getElementById('proTotalReceived');
-    if (elCardReceived) elCardReceived.textContent = formatCurrency(totalReceived);
+    if (elCardReceived) elCardReceived.textContent = formatMoney(totalReceived);
 
     const elCardRemaining = document.getElementById('proTotalRemaining');
-    if (elCardRemaining) elCardRemaining.textContent = formatCurrency(totalRemaining);
+    if (elCardRemaining) elCardRemaining.textContent = formatMoney(totalRemaining);
 
     const elPctText = document.getElementById('proReceivedPctText');
     if (elPctText) elPctText.textContent = `${receivedPercentage}%`;
@@ -167,7 +270,7 @@ function renderDashboard() {
     if (elProgressFill) elProgressFill.style.width = `${receivedPercentage}%`;
 
     // Render 4 Performance Leaderboards
-    renderPerformanceLeaderboards(clients);
+    renderPerformanceLeaderboards(perfClients);
 }
 
 // ============================================================================
@@ -251,7 +354,7 @@ function renderPerformanceLeaderboards(clientsList) {
                 agentMap[name] = { name, count: 0, amount: 0, totalLeads: 0 };
             }
             agentMap[name].totalLeads++;
-            if (c.status === 'Charged') {
+            if (c.status === 'Charged' && (String(c.receiving || '').toLowerCase() === 'received' || c.receiving === 1 || c.receiving === true)) {
                 agentMap[name].count++;
                 agentMap[name].amount += (parseFloat(c.approvalAmount) || parseFloat(c.initialPayment) || 0);
             }
@@ -313,15 +416,77 @@ function setupDashboardDateFilter() {
 
     if (!wrap || !btnTrigger) return;
 
-    // Detect default current/latest month
+    // Detect default current/latest month & week
     const defaultYm = getDefaultDashboardMonth();
     dashboardDateFilter.mode = 'single-month';
     dashboardDateFilter.singleMonth = defaultYm;
+    dashboardDateFilter.selectedWeek = null;
 
-    if (inputSingle) inputSingle.value = defaultYm;
+    let tempSelectedWeek = null;
+
+    function applyCurrentFilter(showNotification = true) {
+        dashboardDateFilter.mode = activeMode;
+        if (activeMode === 'single-month') {
+            dashboardDateFilter.singleMonth = inputSingle ? inputSingle.value : defaultYm;
+        } else if (activeMode === 'month-range') {
+            dashboardDateFilter.startMonth = inputRangeFrom ? inputRangeFrom.value : '';
+            dashboardDateFilter.endMonth = inputRangeTo ? inputRangeTo.value : '';
+        } else if (activeMode === 'current-report') {
+            dashboardDateFilter.selectedWeek = tempSelectedWeek;
+        }
+        updateDateFilterTriggerLabel();
+        renderDashboard();
+        wrap.classList.remove('active');
+        btnTrigger.setAttribute('aria-expanded', 'false');
+    }
+
+    // Week item click handlers in paneCurrentReport (Instant Auto-Apply)
+    const weekItems = document.querySelectorAll('.dash-week-item');
+    weekItems.forEach(item => {
+        item.addEventListener('click', () => {
+            weekItems.forEach(i => i.classList.remove('selected'));
+            item.classList.add('selected');
+            tempSelectedWeek = {
+                start_date: item.getAttribute('data-start'),
+                end_date: item.getAttribute('data-end'),
+                title: item.getAttribute('data-title'),
+                week_label: item.getAttribute('data-label'),
+                date_range: item.getAttribute('data-range')
+            };
+            activeMode = 'current-report';
+            applyCurrentFilter();
+        });
+    });
+
+    if (inputSingle) {
+        inputSingle.value = defaultYm;
+        // Instant Auto-Apply on month pick
+        inputSingle.addEventListener('change', () => {
+            activeMode = 'single-month';
+            applyCurrentFilter();
+        });
+    }
+
     if (inputRangeFrom && !inputRangeFrom.value) inputRangeFrom.value = `${new Date().getFullYear()}-01`;
     if (inputRangeTo && !inputRangeTo.value) inputRangeTo.value = defaultYm;
-    if (currentReportActiveMonth) currentReportActiveMonth.textContent = `Current Month: ${formatMonthLabel(defaultYm)}`;
+
+    // Auto-apply on range pick if both from and to exist
+    if (inputRangeFrom) {
+        inputRangeFrom.addEventListener('change', () => {
+            if (inputRangeFrom.value && inputRangeTo && inputRangeTo.value) {
+                activeMode = 'month-range';
+                applyCurrentFilter();
+            }
+        });
+    }
+    if (inputRangeTo) {
+        inputRangeTo.addEventListener('change', () => {
+            if (inputRangeTo.value && inputRangeFrom && inputRangeFrom.value) {
+                activeMode = 'month-range';
+                applyCurrentFilter();
+            }
+        });
+    }
 
     let activeMode = 'single-month';
     updateDateFilterTriggerLabel();
@@ -351,7 +516,16 @@ function setupDashboardDateFilter() {
         tabBtns.forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
         if (paneSingle) paneSingle.classList.toggle('active', mode === 'single-month');
         if (paneRange) paneRange.classList.toggle('active', mode === 'month-range');
-        if (paneCurrentReport) paneCurrentReport.classList.toggle('active', mode === 'current-report');
+        if (paneCurrentReport) {
+            paneCurrentReport.classList.toggle('active', mode === 'current-report');
+            // Only highlight a week if that week is currently the active selected filter
+            weekItems.forEach(item => {
+                const isCurrent = dashboardDateFilter.mode === 'current-report' && 
+                                  dashboardDateFilter.selectedWeek && 
+                                  dashboardDateFilter.selectedWeek.start_date === item.getAttribute('data-start');
+                item.classList.toggle('selected', !!isCurrent);
+            });
+        }
     }
 
     tabBtns.forEach(btn => {
@@ -360,26 +534,10 @@ function setupDashboardDateFilter() {
         });
     });
 
-    // Apply Filter
+    // Apply Filter (Manual button click)
     if (btnApply) {
         btnApply.addEventListener('click', () => {
-            dashboardDateFilter.mode = activeMode;
-            if (activeMode === 'single-month') {
-                dashboardDateFilter.singleMonth = inputSingle ? inputSingle.value : defaultYm;
-            } else if (activeMode === 'month-range') {
-                dashboardDateFilter.startMonth = inputRangeFrom ? inputRangeFrom.value : '';
-                dashboardDateFilter.endMonth = inputRangeTo ? inputRangeTo.value : '';
-            } else if (activeMode === 'current-report') {
-                dashboardDateFilter.singleMonth = defaultYm;
-            }
-            updateDateFilterTriggerLabel();
-            renderDashboard();
-            wrap.classList.remove('active');
-            btnTrigger.setAttribute('aria-expanded', 'false');
-            if (typeof showToast === 'function') {
-                const label = document.getElementById('dashDateLabel')?.textContent || 'Date';
-                showToast('success', 'Filter Applied', `Dashboard filtered by: ${label}`);
-            }
+            applyCurrentFilter();
         });
     }
 
@@ -394,15 +552,15 @@ function setupDashboardDateFilter() {
                 mode: 'single-month',
                 singleMonth: defYm,
                 startMonth: inputRangeFrom ? inputRangeFrom.value : `${new Date().getFullYear()}-01`,
-                endMonth: inputRangeTo ? inputRangeTo.value : defYm
+                endMonth: inputRangeTo ? inputRangeTo.value : defYm,
+                selectedWeek: null
             };
+            tempSelectedWeek = null;
+            weekItems.forEach(item => item.classList.remove('selected'));
             updateDateFilterTriggerLabel();
             renderDashboard();
             wrap.classList.remove('active');
             btnTrigger.setAttribute('aria-expanded', 'false');
-            if (typeof showToast === 'function') {
-                showToast('info', 'Current Month', `Dashboard reset to ${formatMonthLabel(defYm)}.`);
-            }
         });
     }
 

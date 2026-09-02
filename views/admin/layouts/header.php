@@ -48,6 +48,8 @@ $displayRoleTitle = $roleTitles[$role] ?? 'User';
             activeReportSummary: <?= !empty($activeReport) ? json_encode($activeReport) : 'null' ?>,
             availableWeeks: <?= !empty($availableWeeks) ? json_encode($availableWeeks) : '[]' ?>,
             activeWeek: <?= !empty($activeWeek) ? json_encode($activeWeek) : 'null' ?>,
+            weeklyReports: <?= !empty($weeklyReports) ? json_encode($weeklyReports) : '[]' ?>,
+            dashboardWeeklySummaries: <?= !empty($dashboardWeeklySummaries) ? json_encode($dashboardWeeklySummaries) : '{}' ?>,
             previousRemaining: <?= isset($previousRemaining) ? (float)$previousRemaining : 0.0 ?>,
             previousRemainingList: <?= !empty($previousRemainingList) ? json_encode($previousRemainingList) : '[]' ?>,
             databaseAgents: {

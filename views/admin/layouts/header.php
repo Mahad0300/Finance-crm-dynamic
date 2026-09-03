@@ -88,7 +88,7 @@ $displayRoleTitle = $roleTitles[$role] ?? 'User';
                         <a href="<?= url('clients') ?>" class="top-nav-item <?= ($activeNav ?? '') === 'clients' ? 'active' : '' ?>" id="navClients">
                             <i class="fa-solid fa-users"></i>
                             <span>Client Data</span>
-                            <span class="badge-count" id="navClientCount">0</span>
+                            <span class="badge-count" id="navClientCount" style="<?= (!empty($clients) && count($clients) > 0) ? 'display: inline-flex;' : '' ?>"><?= !empty($clients) ? count($clients) : '0' ?></span>
                         </a>
                     <?php endif; ?>
 

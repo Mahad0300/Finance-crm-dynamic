@@ -76,6 +76,22 @@ require VIEWS_PATH . '/admin/layouts/header.php';
 
     <!-- ==================== APPROVAL & RESIDUAL PAYMENTS MASTER TABLE ==================== -->
     <div class="table-outer-wrapper reports-table-wrapper">
+        <!-- Client Statement Header Banner (Shown when viewing a specific client's ledger) -->
+        <div class="client-ledger-banner" id="clientLedgerBanner" style="display: none;">
+            <div class="ledger-banner-content">
+                <div class="ledger-banner-left">
+                    <span class="ledger-banner-avatar"><i class="fa-solid fa-user-check"></i></span>
+                    <div class="ledger-client-name" id="ledgerClientName">Client Ledger</div>
+                </div>
+                <div class="ledger-banner-right">
+                    <button type="button" class="btn-exit-ledger" id="btnExitLedger" title="Return to weekly report">
+                        <i class="fa-solid fa-arrow-left"></i>
+                        <span id="btnExitLedgerText">Back to Weekly Report</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <div class="table-scroll-container">
             <table class="crm-data-table" id="combinedTable">
                 <thead>

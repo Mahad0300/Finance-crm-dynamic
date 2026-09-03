@@ -9,6 +9,9 @@
 // ============================================================================
 
 let combinedReportClients = null;
+let isClientLedgerMode = false;
+let activeClientLedgerData = null;
+let savedWeeklyReportState = null;
 
 function getCombinedReportClients() {
     if (!combinedReportClients) {
@@ -128,7 +131,12 @@ function renderCombinedReportsTable() {
 
         tr.innerHTML = `
             <td class="cell-rep-date font-mono">${formatDateDisplay(client.date)}</td>
-            <td class="cell-rep-name font-bold">${escapeHtml(client.clientName)}</td>
+            <td class="cell-rep-name font-bold">
+                <span class="client-name-link" data-client-id="${client.id}" title="Click to view full transaction ledger for ${escapeHtml(client.clientName)}">
+                    ${escapeHtml(client.clientName)}
+                    <i class="fa-solid fa-arrow-up-right-from-square client-name-link-icon"></i>
+                </span>
+            </td>
             <td class="cell-rep-plan font-bold text-center">${planDisplay}</td>
             <td class="currency-val cell-rep-initial font-bold">${approvalDisplay}</td>
             <td class="currency-val cell-rep-residual font-bold text-primary">${residualDisplay}</td>
@@ -168,10 +176,20 @@ function renderCombinedReportsTable() {
         });
     });
 
+    // Client ledger click listener
+    tbody.querySelectorAll('.client-name-link').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const cId = parseInt(link.getAttribute('data-client-id'), 10);
+            if (cId) loadClientLedger(cId);
+        });
+    });
+
     updateCombinedTotals();
 }
 
 function updateCombinedTotals() {
+    if (isClientLedgerMode) return;
     const clients = getCombinedReportClients();
     const totalApprovalDue = clients.reduce((sum, c) => sum + (parseFloat(c.approvalPayment) || 0), 0);
     const totalResidualDue = clients.reduce((sum, c) => sum + (parseFloat(c.residual) || 0), 0);
@@ -218,6 +236,7 @@ function updateCombinedTotals() {
 let saveFooterDebounce = null;
 
 function doSyncFooter() {
+    if (isClientLedgerMode) return;
     const inputTotalReceived = document.getElementById('inputTotalReceived');
     const reportSummary = window.APP_CONFIG ? window.APP_CONFIG.activeReportSummary : null;
     if (!reportSummary || !reportSummary.id) return;
@@ -254,6 +273,10 @@ function syncFooterWithDatabase() {
 
 function switchWeeklyCycle(startDate) {
     if (!startDate) return;
+
+    if (isClientLedgerMode) {
+        exitClientLedger(false);
+    }
 
     // Immediately flush any pending footer edits before switching
     if (saveFooterDebounce) {
@@ -338,6 +361,143 @@ function switchWeeklyCycle(startDate) {
 // ============================================================================
 // 4. EXPORT HANDLER & INITIALIZATION
 // ============================================================================
+
+// ============================================================================
+// 4. CLIENT STATEMENT / LEDGER FEATURE (IN-TABLE DRILLDOWN)
+// ============================================================================
+
+async function loadClientLedger(clientId) {
+    if (!clientId) return;
+    try {
+        const response = await fetch(`${window.APP_CONFIG.baseUrl}/api/reports/client-ledger`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `client_id=${encodeURIComponent(clientId)}`
+        });
+        const data = await response.json();
+        if (data && data.success && data.records) {
+            // Save currently active weekly records before switching
+            if (!isClientLedgerMode) {
+                const inputTotalReceived = document.getElementById('inputTotalReceived');
+                savedWeeklyReportState = {
+                    clients: [...getCombinedReportClients()],
+                    totalReceivedVal: inputTotalReceived ? inputTotalReceived.value : '0'
+                };
+            }
+            isClientLedgerMode = true;
+            activeClientLedgerData = data;
+            renderClientLedger(data);
+        } else {
+            console.error('Failed to load client ledger:', data.error);
+        }
+    } catch (err) {
+        console.error('Error fetching client ledger:', err);
+    }
+}
+
+function renderClientLedger(data) {
+    const tbody = document.getElementById('combinedTableBody');
+    if (!tbody || !data || !data.records) return;
+
+    // Show top banner with client name only
+    const banner = document.getElementById('clientLedgerBanner');
+    const nameEl = document.getElementById('ledgerClientName');
+    const btnExitText = document.getElementById('btnExitLedgerText');
+
+    if (banner && nameEl) {
+        banner.style.display = 'block';
+        nameEl.textContent = data.client.name;
+        const currentWeekText = document.getElementById('currentWeekTriggerText')?.textContent || 'Weekly Report';
+        if (btnExitText) btnExitText.textContent = `Back to ${currentWeekText}`;
+    }
+
+    tbody.innerHTML = '';
+
+    const records = data.records;
+    if (records.length === 0) {
+        const emptyTr = document.createElement('tr');
+        emptyTr.innerHTML = `<td colspan="6" class="text-center text-muted" style="padding: 30px;">No statement records found for this client.</td>`;
+        tbody.appendChild(emptyTr);
+        return;
+    }
+
+    let totalApproval = 0;
+    let totalResidual = 0;
+    let totalReceived = 0;
+
+    records.forEach(rec => {
+        const tr = document.createElement('tr');
+
+        const appAmount = rec.approval_payment ? parseFloat(rec.approval_payment) : 0;
+        const resAmount = rec.residual_payment ? parseFloat(rec.residual_payment) : 0;
+
+        totalApproval += appAmount;
+        totalResidual += resAmount;
+
+        if (rec.is_received) {
+            totalReceived += (appAmount + resAmount);
+        }
+
+        const approvalDisplay = appAmount > 0 
+            ? formatCurrency(appAmount) 
+            : `<span class="text-muted-dash">-</span>`;
+
+        const residualDisplay = resAmount > 0 
+            ? formatCurrency(resAmount) 
+            : `<span class="text-muted-dash">-</span>`;
+
+        tr.innerHTML = `
+            <td class="cell-rep-date font-mono">${formatDateDisplay(rec.date)}</td>
+            <td class="cell-rep-name font-bold">${escapeHtml(data.client.name)}</td>
+            <td class="cell-rep-plan font-bold text-center">${rec.plan} Months</td>
+            <td class="currency-val cell-rep-initial font-bold">${approvalDisplay}</td>
+            <td class="currency-val cell-rep-residual font-bold text-primary">${residualDisplay}</td>
+            <td class="cell-rep-checkbox text-center">
+                <label class="crm-custom-chk" title="Status: ${escapeHtml(rec.receiving)}">
+                    <input type="checkbox" 
+                        class="crm-chk-native" 
+                        ${rec.is_received ? 'checked' : ''} 
+                        disabled>
+                    <span class="crm-chk-box">
+                        <i class="fa-solid fa-check"></i>
+                    </span>
+                </label>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    // Hide table footer when viewing single client ledger
+    const tfoot = document.getElementById('combinedTableFoot');
+    if (tfoot) {
+        tfoot.style.display = 'none';
+    }
+}
+
+function exitClientLedger(shouldReRender = true) {
+    if (!isClientLedgerMode) return;
+    isClientLedgerMode = false;
+    activeClientLedgerData = null;
+
+    const banner = document.getElementById('clientLedgerBanner');
+    if (banner) banner.style.display = 'none';
+
+    const tfoot = document.getElementById('combinedTableFoot');
+    if (tfoot) {
+        tfoot.style.display = '';
+    }
+
+    const inputTotalReceived = document.getElementById('inputTotalReceived');
+    if (inputTotalReceived) inputTotalReceived.readOnly = false;
+
+    if (shouldReRender && savedWeeklyReportState) {
+        renderCombinedReportsTable();
+        if (inputTotalReceived) {
+            inputTotalReceived.value = savedWeeklyReportState.totalReceivedVal;
+        }
+        updateCombinedTotals();
+    }
+}
 
 function updateReportLiveHeaderDate() {
     const el = document.getElementById('reportHeaderDate');
@@ -437,6 +597,14 @@ function initReportsPage() {
         inputTotalReceived.addEventListener('input', () => {
             updateCombinedTotals();
             syncFooterWithDatabase();
+        });
+    }
+
+    // Exit Client Ledger Button Handler
+    const btnExitLedger = document.getElementById('btnExitLedger');
+    if (btnExitLedger) {
+        btnExitLedger.addEventListener('click', () => {
+            exitClientLedger(true);
         });
     }
 

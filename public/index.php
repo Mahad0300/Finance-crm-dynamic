@@ -70,6 +70,7 @@ $router->post('/api/clients/delete', 'Admin\\ClientsController@delete', [AuthMid
 $router->post('/api/reports/toggle', 'Admin\\ReportsController@toggleCheckbox', [AuthMiddleware::class]);
 $router->post('/api/reports/footer', 'Admin\\ReportsController@saveFooter', [AuthMiddleware::class]);
 $router->post('/api/reports/switch-week', 'Admin\\ReportsController@switchWeek', [AuthMiddleware::class]);
+$router->post('/api/reports/client-ledger', 'Admin\\ReportsController@getClientLedger', [AuthMiddleware::class]);
 
 // 4. Dispatch Request
 $url = isset($_GET['url']) ? rtrim((string)$_GET['url'], '/') : '';

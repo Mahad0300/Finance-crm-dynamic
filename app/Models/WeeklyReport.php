@@ -359,4 +359,87 @@ class WeeklyReport extends Model {
         }
         return $summaries;
     }
+
+    /**
+     * Get full historical and scheduled statement/ledger for a specific client
+     */
+    public function getClientStatement(int $clientId): ?array
+    {
+        if (!$this->isConnected()) return null;
+
+        $stmt = $this->query("SELECT * FROM clients WHERE id = :id", [':id' => $clientId]);
+        $client = $stmt ? $stmt->fetch(\PDO::FETCH_ASSOC) : null;
+        if (!$client) return null;
+
+        $initDate = $client['initial_payment_date'] ?: $client['date'];
+        if (!$initDate || $initDate === '0000-00-00') return null;
+
+        $statement = [];
+        $meta1 = $this->getWeekMeta($initDate);
+        $statement[] = [
+            'id'               => (int)$client['id'],
+            'client_id'        => (int)$client['id'],
+            'client_name'      => $client['client_name'],
+            'date'             => $initDate,
+            'payment_type'     => 'Approval Payment',
+            'plan'             => $client['plan'],
+            'week_title'       => $meta1['title'],
+            'approval_payment' => (float)$client['approval_amount'],
+            'residual_payment' => null,
+            'receiving'        => $client['receiving'],
+            'is_received'      => (strtolower((string)$client['receiving']) === 'received' || $client['receiving'] == 1)
+        ];
+
+        $planMonths = (int)($client['plan'] ?: 12);
+        $initTs = strtotime($initDate);
+        $initDay = (int)date('d', $initTs);
+        $todayTs = time();
+
+        for ($m = 2; $m <= $planMonths; $m++) {
+            $monthOffset = $m - 1;
+            $targetMonthTs = strtotime("+{$monthOffset} month", $initTs);
+            $targetYear = (int)date('Y', $targetMonthTs);
+            $targetMonth = (int)date('m', $targetMonthTs);
+            $daysInMonth = (int)cal_days_in_month(CAL_GREGORIAN, $targetMonth, $targetYear);
+            $actualDay = min($initDay, $daysInMonth);
+            $resDate = sprintf('%04d-%02d-%02d', $targetYear, $targetMonth, $actualDay);
+            $resTs = strtotime($resDate);
+
+            // Only include actual transactions that have occurred (No future scheduled rows)
+            if ($resTs > $todayTs) {
+                break;
+            }
+
+            $metaM = $this->getWeekMeta($resDate);
+
+            $statement[] = [
+                'id'               => (int)$client['id'],
+                'client_id'        => (int)$client['id'],
+                'client_name'      => $client['client_name'],
+                'date'             => $resDate,
+                'payment_type'     => "Month {$m} Residual",
+                'plan'             => $client['plan'],
+                'week_title'       => $metaM['title'],
+                'approval_payment' => null,
+                'residual_payment' => (float)$client['residual'],
+                'receiving'        => $client['receiving'],
+                'is_received'      => (strtolower((string)$client['receiving']) === 'received' || $client['receiving'] == 1)
+            ];
+        }
+
+        return [
+            'client' => [
+                'id'                   => (int)$client['id'],
+                'name'                 => $client['client_name'],
+                'plan'                 => (int)$client['plan'],
+                'initial_payment'      => (float)$client['initial_payment'],
+                'initial_payment_date' => $client['initial_payment_date'],
+                'approval_amount'      => (float)$client['approval_amount'],
+                'residual'             => (float)$client['residual'],
+                'status'               => $client['status'],
+                'receiving'            => $client['receiving']
+            ],
+            'records' => $statement
+        ];
+    }
 }

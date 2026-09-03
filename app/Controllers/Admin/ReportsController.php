@@ -4,6 +4,7 @@ namespace App\Controllers\Admin;
 use App\Core\Controller;
 use App\Models\WeeklyReport;
 use App\Models\Agent;
+use App\Models\Client;
 
 class ReportsController extends Controller
 {
@@ -11,7 +12,9 @@ class ReportsController extends Controller
     {
         $reportModel = new WeeklyReport();
         $agentModel = new Agent();
+        $clientModel = new Client();
 
+        $clients = $clientModel->getAll();
         $availableWeeks = $reportModel->getAvailableWeeks();
         
         // Active week requested or latest available
@@ -50,6 +53,7 @@ class ReportsController extends Controller
         $this->view('admin/reports', [
             'pageTitle'              => 'Weekly Reports & Balance - Finance Portal',
             'activeNav'              => 'reports',
+            'clients'                => $clients,
             'availableWeeks'         => $availableWeeks,
             'activeWeek'             => $activeWeek,
             'activeReport'           => $activeReport,
@@ -105,5 +109,27 @@ class ReportsController extends Controller
         $reportModel = new WeeklyReport();
         $updated = $reportModel->updateFooterTotals($reportId, $totalReceived, $totalRemaining, $totalTarget);
         $this->jsonResponse(['success' => $updated]);
+    }
+
+    public function getClientLedger(): void
+    {
+        $clientId = (int)($_POST['client_id'] ?? 0);
+        if ($clientId <= 0) {
+            $this->jsonResponse(['success' => false, 'error' => 'Invalid client ID'], 400);
+            return;
+        }
+
+        $reportModel = new WeeklyReport();
+        $ledger = $reportModel->getClientStatement($clientId);
+        if (!$ledger) {
+            $this->jsonResponse(['success' => false, 'error' => 'Client statement not found'], 404);
+            return;
+        }
+
+        $this->jsonResponse([
+            'success' => true,
+            'client'  => $ledger['client'],
+            'records' => $ledger['records']
+        ]);
     }
 }

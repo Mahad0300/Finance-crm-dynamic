@@ -22,8 +22,8 @@ class DashboardController extends Controller
 
         $availableWeeks = $reportModel->getAvailableWeeks();
         $activeWeek = !empty($availableWeeks) ? $availableWeeks[0] : null;
-        $weeklyReports = $reportModel->getAllReports();
         $dashboardWeeklySummaries = $reportModel->getDashboardWeeklySummaries();
+        $weeklyReports = $reportModel->getAllReports();
 
         $this->view('admin/dashboard', [
             'pageTitle'                => 'Executive Dashboard - Finance Portal',

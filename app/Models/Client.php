@@ -177,7 +177,14 @@ class Client extends Model {
             ':receiving'            => !empty($data['receiving']) ? $data['receiving'] : 'Pending',
         ]);
 
-        return $stmt !== null;
+        $success = ($stmt !== null);
+        if ($success && isset($data['receiving'])) {
+            $isRec = (strtolower((string)$data['receiving']) === 'received') ? 1 : 0;
+            $reportModel = new \App\Models\WeeklyReport();
+            $reportModel->toggleClientReceived($id, $isRec);
+        }
+
+        return $success;
     }
 
     public function delete(int $id): bool {

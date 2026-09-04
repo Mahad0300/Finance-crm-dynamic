@@ -581,6 +581,22 @@ function renderClientLedger(data) {
                                 match.isReceived = isChecked;
                             }
                         }
+
+                        // Also update activeReportSummary if totals returned
+                        if (res.totals && window.APP_CONFIG && window.APP_CONFIG.activeReportSummary) {
+                            if (window.APP_CONFIG.activeReportSummary.id === res.totals.id) {
+                                window.APP_CONFIG.activeReportSummary.total_receiving_target = res.totals.total_target;
+                                window.APP_CONFIG.activeReportSummary.total_received_entered = res.totals.total_received;
+                                window.APP_CONFIG.activeReportSummary.total_remaining_balance = res.totals.total_remaining;
+                            }
+                        }
+
+                        if (savedWeeklyReportState && combinedReportClients) {
+                            const newSum = combinedReportClients
+                                .filter(c => c.isReceived)
+                                .reduce((s, c) => s + (parseFloat(c.approvalPayment || c.residual) || 0), 0);
+                            savedWeeklyReportState.totalReceivedVal = newSum > 0 ? newSum : '';
+                        }
                     }
                 }).catch(err => console.log('Ledger toggle offline sync', err));
             }
@@ -612,10 +628,15 @@ function exitClientLedger(shouldReRender = true) {
 
     if (shouldReRender && savedWeeklyReportState) {
         renderCombinedReportsTable();
+        const checkedTotal = getCombinedReportClients()
+            .filter(c => c.isReceived)
+            .reduce((sum, c) => sum + (parseFloat(c.approvalPayment || c.residual) || 0), 0);
+
         if (inputTotalReceived) {
-            inputTotalReceived.value = savedWeeklyReportState.totalReceivedVal;
+            inputTotalReceived.value = checkedTotal > 0 ? checkedTotal : '';
         }
         updateCombinedTotals();
+        doSyncFooter();
     }
 }
 

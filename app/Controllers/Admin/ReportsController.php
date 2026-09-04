@@ -98,8 +98,12 @@ class ReportsController extends Controller
         $isReceived = (int)($_POST['is_received'] ?? 0);
 
         $reportModel = new WeeklyReport();
-        $updated = $reportModel->toggleTransactionReceived($clientId, $isReceived, $recordId, $paymentType, $date);
-        $this->jsonResponse(['success' => $updated]);
+        $result = $reportModel->toggleTransactionReceived($clientId, $isReceived, $recordId, $paymentType, $date);
+        $totals = is_array($result) ? $result : null;
+        $this->jsonResponse([
+            'success' => !empty($result),
+            'totals'  => $totals
+        ]);
     }
 
     public function saveFooter(): void

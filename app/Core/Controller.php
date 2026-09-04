@@ -82,6 +82,9 @@ class Controller
             case 'report_user':
                 $this->redirect('reports');
                 break;
+            case 'commission_user':
+                $this->redirect('commission');
+                break;
             default:
                 $this->redirect('login');
                 break;

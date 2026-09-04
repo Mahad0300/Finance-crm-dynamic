@@ -3,27 +3,27 @@ namespace App\Middleware;
 
 use App\Core\Session;
 
-class AdminAuthMiddleware implements MiddlewareInterface
+class CommissionAuthMiddleware implements MiddlewareInterface
 {
     public function handle(): void
     {
         if (!Session::isLoggedIn()) {
-            Session::setFlash('error', 'Please sign in to access the Dashboard.');
+            Session::setFlash('error', 'Please sign in to access Commission.');
             $baseUrl = defined('BASE_URL') ? BASE_URL : '';
             header('Location: ' . $baseUrl . '/login');
             exit;
         }
 
         $user = Session::user();
-        if (($user['role'] ?? '') !== 'admin') {
+        $role = $user['role'] ?? '';
+
+        // Admin and commission_user are allowed
+        if ($role !== 'admin' && $role !== 'commission_user') {
             $baseUrl = defined('BASE_URL') ? BASE_URL : '';
-            $role = $user['role'] ?? 'client_user';
             if ($role === 'client_user') {
                 header('Location: ' . $baseUrl . '/clients');
             } elseif ($role === 'report_user') {
                 header('Location: ' . $baseUrl . '/reports');
-            } elseif ($role === 'commission_user') {
-                header('Location: ' . $baseUrl . '/commission');
             } else {
                 header('Location: ' . $baseUrl . '/login');
             }

@@ -22,6 +22,8 @@ class ClientAuthMiddleware implements MiddlewareInterface
             $baseUrl = defined('BASE_URL') ? BASE_URL : '';
             if ($role === 'report_user') {
                 header('Location: ' . $baseUrl . '/reports');
+            } elseif ($role === 'commission_user') {
+                header('Location: ' . $baseUrl . '/commission');
             } else {
                 header('Location: ' . $baseUrl . '/login');
             }

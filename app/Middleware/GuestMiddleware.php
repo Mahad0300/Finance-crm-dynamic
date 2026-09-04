@@ -22,6 +22,9 @@ class GuestMiddleware implements MiddlewareInterface
                 case 'report_user':
                     header('Location: ' . $baseUrl . '/reports');
                     break;
+                case 'commission_user':
+                    header('Location: ' . $baseUrl . '/commission');
+                    break;
                 default:
                     header('Location: ' . $baseUrl . '/');
                     break;

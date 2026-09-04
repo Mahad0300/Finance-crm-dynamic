@@ -22,6 +22,8 @@ class ReportAuthMiddleware implements MiddlewareInterface
             $baseUrl = defined('BASE_URL') ? BASE_URL : '';
             if ($role === 'client_user') {
                 header('Location: ' . $baseUrl . '/clients');
+            } elseif ($role === 'commission_user') {
+                header('Location: ' . $baseUrl . '/commission');
             } else {
                 header('Location: ' . $baseUrl . '/login');
             }

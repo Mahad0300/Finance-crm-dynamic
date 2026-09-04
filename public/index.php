@@ -32,6 +32,7 @@ use App\Middleware\AuthMiddleware;
 use App\Middleware\AdminAuthMiddleware;
 use App\Middleware\ClientAuthMiddleware;
 use App\Middleware\ReportAuthMiddleware;
+use App\Middleware\CommissionAuthMiddleware;
 use App\Middleware\GuestMiddleware;
 use App\Middleware\CsrfMiddleware;
 
@@ -64,6 +65,7 @@ $router->get('/', 'Admin\\DashboardController@index', [AdminAuthMiddleware::clas
 $router->get('/dashboard', 'Admin\\DashboardController@index', [AdminAuthMiddleware::class]);
 $router->get('/clients', 'Admin\\ClientsController@index', [ClientAuthMiddleware::class]);
 $router->get('/reports', 'Admin\\ReportsController@index', [ReportAuthMiddleware::class]);
+$router->get('/commission', 'Admin\\CommissionController@index', [CommissionAuthMiddleware::class]);
 
 // 3. API Endpoints (Admin)
 $router->post('/api/clients/create', 'Admin\\ClientsController@create', [AuthMiddleware::class]);

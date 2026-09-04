@@ -36,9 +36,17 @@ function populateSelectOptions() {
         });
     }
 
-    // Set Default Today Date for Inline Entry
+function getTodayLocalDateString() {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
+
+    // Set Default Today Date for Inline Entry (using local date, not UTC toISOString)
     if (tblDate && !tblDate.value) {
-        tblDate.value = new Date().toISOString().split('T')[0];
+        tblDate.value = getTodayLocalDateString();
     }
 
     // 3. Filter Plans (on client list page)
@@ -238,7 +246,7 @@ function renderClientTable() {
     if (totalRecords === 0) {
         if (clientsTable) clientsTable.style.display = 'none';
         if (emptyState) emptyState.style.display = 'flex';
-        if (paginationFooter) paginationFooter.style.display = 'none';
+        if (paginationFooter) paginationFooter.style.display = 'flex';
     } else {
         if (clientsTable) clientsTable.style.display = 'table';
         if (emptyState) emptyState.style.display = 'none';
@@ -358,7 +366,10 @@ function renderClientTable() {
                 tr.innerHTML = `
                     <td>${formatDateDisplay(client.date)}</td>
                     <td>
-                        <strong class="client-name-text">${escapeHtml(client.clientName)}</strong>
+                        <span class="client-name-link" data-client-id="${client.id}" title="Click to view full transaction ledger for ${escapeHtml(client.clientName)}">
+                            <span class="client-name-text">${escapeHtml(client.clientName)}</span>
+                            <i class="fa-solid fa-arrow-up-right-from-square client-name-link-icon"></i>
+                        </span>
                     </td>
                     <td>${escapeHtml(client.connector || '-')}</td>
                     <td>${getSmartAgentBadgeHtml(client.smartAgent)}</td>
@@ -377,9 +388,17 @@ function renderClientTable() {
             }
         });
 
-        renderPagination(totalPages, safePage, startIndex, endIndex, totalRecords);
+        // Client ledger click listener
+        clientsTableBody.querySelectorAll('.client-name-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const cId = parseInt(link.getAttribute('data-client-id'), 10);
+                if (cId) loadClientLedgerOnClientsPage(cId);
+            });
+        });
     }
 
+    renderPagination(totalPages, safePage, startIndex, endIndex, totalRecords);
     updateHeaderSortIndicators();
     updateThFilterIndicators();
     renderMonthTabs();
@@ -514,11 +533,19 @@ function renderPagination(totalPages, currentPage, startIndex, endIndex, totalRe
     const paginationControls = document.getElementById('paginationControls');
 
     if (tableResultsCount) {
-        tableResultsCount.innerHTML = `Showing <strong>${totalRecords === 0 ? 0 : startIndex + 1} &ndash; ${endIndex}</strong> of <strong>${totalRecords}</strong> clients`;
+        if (totalRecords === 0) {
+            tableResultsCount.innerHTML = `Showing <strong>0</strong> clients`;
+        } else {
+            tableResultsCount.innerHTML = `Showing <strong>${startIndex + 1} &ndash; ${endIndex}</strong> of <strong>${totalRecords}</strong> clients`;
+        }
     }
     if (!paginationControls) return;
 
     paginationControls.innerHTML = '';
+
+    if (totalPages <= 1) {
+        return;
+    }
 
     const prevBtn = document.createElement('button');
     prevBtn.className = 'btn-arrow-page';
@@ -571,13 +598,17 @@ function generateMonthTabsList() {
             const latest = validDates[validDates.length - 1];
             const [y, m] = latest.split('-');
             if (y && m) {
-                baseDate = new Date(parseInt(y), parseInt(m) - 1, 1);
+                const clientMaxDate = new Date(parseInt(y, 10), parseInt(m, 10) - 1, 1);
+                if (clientMaxDate > baseDate) {
+                    baseDate = clientMaxDate;
+                }
             }
         }
     }
 
     const months = [];
-    for (let i = 5; i >= 0; i--) {
+    // Show current month first, followed by previous months (All, Sept, Aug, Jul, Jun...)
+    for (let i = 0; i <= 5; i++) {
         const d = new Date(baseDate.getFullYear(), baseDate.getMonth() - i, 1);
         const yyyy = d.getFullYear();
         const mm = String(d.getMonth() + 1).padStart(2, '0');
@@ -674,7 +705,7 @@ function showInlineAddRow() {
         if (emptyState) emptyState.style.display = 'none';
 
         if (tblDate && !tblDate.value) {
-            tblDate.value = new Date().toISOString().split('T')[0];
+            tblDate.value = getTodayLocalDateString();
         }
 
         setTimeout(() => {
@@ -738,7 +769,7 @@ function handleInlineSaveClient() {
     const tblInitialPaymentDate = document.getElementById('tblInitialPaymentDate');
     const tblReceiving = document.getElementById('tblReceiving');
 
-    const dateVal = tblDate && tblDate.value ? tblDate.value : new Date().toISOString().split('T')[0];
+    const dateVal = tblDate && tblDate.value ? tblDate.value : getTodayLocalDateString();
     const connectorVal = tblConnector ? tblConnector.value.trim() : '';
     const smartAgentVal = tblSmartAgent ? tblSmartAgent.value : '';
     const superAgentVal = tblSuperAgent ? tblSuperAgent.value : '';
@@ -794,20 +825,20 @@ function handleInlineSaveClient() {
     // AJAX Create to Database API to get real MySQL ID
     if (window.APP_CONFIG && window.APP_CONFIG.baseUrl) {
         const formData = new URLSearchParams();
-        formData.append('date', newClient.date);
-        formData.append('clientName', newClient.clientName);
-        formData.append('connector', newClient.connector);
-        formData.append('smartAgent', newClient.smartAgent);
-        formData.append('superAgent', newClient.superAgent);
-        formData.append('closer', newClient.closer);
-        formData.append('status', newClient.status);
-        formData.append('plan', newClient.plan);
-        formData.append('monthly', newClient.monthly);
-        formData.append('initialPayment', newClient.initialPayment);
-        formData.append('initialPaymentDate', newClient.initialPaymentDate);
-        formData.append('residual', newClient.residual);
-        formData.append('approvalAmount', newClient.approvalAmount);
-        formData.append('receiving', newClient.receiving);
+        if (newClient.date) formData.append('date', newClient.date);
+        if (newClient.clientName) formData.append('clientName', newClient.clientName);
+        if (newClient.connector) formData.append('connector', newClient.connector);
+        if (newClient.smartAgent) formData.append('smartAgent', newClient.smartAgent);
+        if (newClient.superAgent) formData.append('superAgent', newClient.superAgent);
+        if (newClient.closer) formData.append('closer', newClient.closer);
+        if (newClient.status) formData.append('status', newClient.status);
+        if (newClient.plan !== null && newClient.plan !== undefined && newClient.plan !== '') formData.append('plan', newClient.plan);
+        if (newClient.monthly !== null && newClient.monthly !== undefined && newClient.monthly !== '') formData.append('monthly', newClient.monthly);
+        if (newClient.initialPayment !== null && newClient.initialPayment !== undefined && newClient.initialPayment !== '') formData.append('initialPayment', newClient.initialPayment);
+        if (newClient.initialPaymentDate) formData.append('initialPaymentDate', newClient.initialPaymentDate);
+        if (newClient.residual !== null && newClient.residual !== undefined && newClient.residual !== '') formData.append('residual', newClient.residual);
+        if (newClient.approvalAmount !== null && newClient.approvalAmount !== undefined && newClient.approvalAmount !== '') formData.append('approvalAmount', newClient.approvalAmount);
+        if (newClient.receiving) formData.append('receiving', newClient.receiving);
 
         fetch(`${window.APP_CONFIG.baseUrl}/api/clients/create`, {
             method: 'POST',
@@ -820,9 +851,12 @@ function handleInlineSaveClient() {
                 newClient.id = Number(res.id);
                 saveClients();
                 renderClientTable();
+                showToast('success', 'Client Saved', `"${newClient.clientName}" saved to database.`);
+            } else if (res && res.error) {
+                showToast('error', 'Save Failed', res.error);
             }
         })
-        .catch(err => console.log('Client create offline sync', err));
+        .catch(err => console.log('Client create sync error', err));
     }
 
     tblClientName.value = '';
@@ -974,14 +1008,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    const selectRowsPerPage = document.getElementById('selectRowsPerPage');
-    if (selectRowsPerPage) {
-        selectRowsPerPage.addEventListener('change', (e) => {
-            state.pagination.rowsPerPage = parseInt(e.target.value) || 10;
-            state.pagination.currentPage = 1;
-            renderClientTable();
-        });
-    }
+    state.pagination.rowsPerPage = 450;
 
     // Inline Table Events
     const tblInitialPayment = document.getElementById('tblInitialPayment');
@@ -1053,6 +1080,11 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        // Ignore clicks inside agent popover dropdowns
+        if (e.target.closest && e.target.closest('.agent-popover-dropdown')) {
+            return;
+        }
+
         if (state.editingClientId) {
             const editRow = document.getElementById(`editRow_${state.editingClientId}`);
             if (editRow && !editRow.contains(e.target)) {
@@ -1064,11 +1096,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const inlineRow = document.getElementById('inlineAddRow');
         const btnOpenModal = document.getElementById('btnOpenAddModal');
         const btnHeaderAdd = document.querySelector('.btn-header-add');
+        const btnSaveInline = document.getElementById('btnSaveInlineClient');
 
         if (inlineRow && inlineRow.style.display === 'table-row') {
             const isInsideAddRow = inlineRow.contains(e.target);
             const isAddButton = (btnOpenModal && btnOpenModal.contains(e.target)) ||
-                                (btnHeaderAdd && btnHeaderAdd.contains(e.target));
+                                (btnHeaderAdd && btnHeaderAdd.contains(e.target)) ||
+                                (btnSaveInline && btnSaveInline.contains(e.target));
 
             if (!isInsideAddRow && !isAddButton) {
                 const clientNameInput = document.getElementById('tblClientName');
@@ -1082,4 +1116,176 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
+
+    // Inline Save Button Click
+    const btnSaveInline = document.getElementById('btnSaveInlineClient');
+    if (btnSaveInline) {
+        btnSaveInline.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleInlineSaveClient();
+        });
+    }
+
+    // Exit Client Ledger Button Handler
+    const btnExit = document.getElementById('btnExitLedger');
+    if (btnExit) {
+        btnExit.addEventListener('click', exitClientLedgerOnClientsPage);
+    }
 });
+
+// ============================================================================
+// 10. CLIENT STATEMENT / LEDGER FEATURE (IN-PAGE STATEMENT)
+// ============================================================================
+
+async function loadClientLedgerOnClientsPage(clientId) {
+    if (!clientId) return;
+    try {
+        const baseUrl = (window.APP_CONFIG && window.APP_CONFIG.baseUrl) ? window.APP_CONFIG.baseUrl : '';
+        const response = await fetch(`${baseUrl}/api/reports/client-ledger`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `client_id=${encodeURIComponent(clientId)}`
+        });
+        const data = await response.json();
+        if (data && data.success && data.records) {
+            renderClientLedgerOnClientsPage(data);
+        } else {
+            console.error('Failed to load client ledger:', data.error);
+        }
+    } catch (err) {
+        console.error('Error fetching client ledger:', err);
+    }
+}
+
+function renderClientLedgerOnClientsPage(data) {
+    const ledgerView = document.getElementById('clientLedgerView');
+    const toolbar = document.getElementById('clientsToolbar');
+    const tableWrapper = document.getElementById('clientsTableWrapper');
+    const nameEl = document.getElementById('ledgerClientName');
+    const tbody = document.getElementById('clientStatementTableBody');
+
+    if (!ledgerView || !tbody) return;
+
+    if (toolbar) toolbar.style.display = 'none';
+    if (tableWrapper) tableWrapper.style.display = 'none';
+    ledgerView.style.display = 'block';
+
+    if (nameEl) {
+        nameEl.textContent = data.client.name;
+    }
+
+    tbody.innerHTML = '';
+
+    const records = data.records;
+    if (records.length === 0) {
+        const emptyTr = document.createElement('tr');
+        emptyTr.innerHTML = `<td colspan="6" class="text-center text-muted" style="padding: 30px;">No statement records found for this client.</td>`;
+        tbody.appendChild(emptyTr);
+        return;
+    }
+
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+    records.forEach(rec => {
+        const tr = document.createElement('tr');
+
+        const appAmount = rec.approval_payment ? parseFloat(rec.approval_payment) : 0;
+        const resAmount = rec.residual_payment ? parseFloat(rec.residual_payment) : 0;
+
+        const approvalDisplay = appAmount > 0 
+            ? formatCurrency(appAmount) 
+            : `<span class="text-muted-dash">-</span>`;
+
+        const residualDisplay = resAmount > 0 
+            ? formatCurrency(resAmount) 
+            : `<span class="text-muted-dash">-</span>`;
+
+        // Future date constraint: Only past or current date (<= todayStr) can be checked!
+        const isFuture = rec.date > todayStr;
+        const isApprovalRow = (appAmount > 0);
+        const clientId = data.client.id;
+
+        tr.innerHTML = `
+            <td class="cell-rep-date font-mono">${formatDateDisplay(rec.date)}</td>
+            <td class="cell-rep-name font-bold">${escapeHtml(data.client.name)}</td>
+            <td class="cell-rep-plan font-bold text-center">${rec.plan} Months</td>
+            <td class="currency-val cell-rep-initial font-bold">${approvalDisplay}</td>
+            <td class="currency-val cell-rep-residual font-bold text-primary">${residualDisplay}</td>
+            <td class="cell-rep-checkbox text-center">
+                <label class="crm-custom-chk ${isFuture ? 'chk-disabled' : ''}" 
+                       title="${isFuture ? 'Cannot mark as received: Date (' + formatDateDisplay(rec.date) + ') is in the future' : 'Click to toggle received status'}">
+                    <input type="checkbox" 
+                        class="crm-chk-native ledger-receiving-checkbox" 
+                        data-client-id="${clientId}"
+                        data-record-id="${rec.record_id || ''}"
+                        data-is-approval="${isApprovalRow ? '1' : '0'}"
+                        data-payment-type="${rec.payment_type || (isApprovalRow ? 'Approval Payment' : 'Residual Payment')}"
+                        data-date="${rec.date}"
+                        ${rec.is_received ? 'checked' : ''} 
+                        ${isFuture ? 'disabled' : ''}>
+                    <span class="crm-chk-box">
+                        <i class="fa-solid fa-check"></i>
+                    </span>
+                </label>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    // Checkbox toggle listener for ledger rows (only active for enabled rows <= today)
+    tbody.querySelectorAll('.ledger-receiving-checkbox:not(:disabled)').forEach(chk => {
+        chk.addEventListener('change', (e) => {
+            const cId = parseInt(e.target.getAttribute('data-client-id'), 10);
+            const recordId = e.target.getAttribute('data-record-id');
+            const pType = e.target.getAttribute('data-payment-type');
+            const pDate = e.target.getAttribute('data-date');
+            const isApproval = e.target.getAttribute('data-is-approval') === '1';
+            const isChecked = e.target.checked;
+
+            if (window.APP_CONFIG && window.APP_CONFIG.baseUrl) {
+                const params = new URLSearchParams();
+                params.append('client_id', cId);
+                params.append('id', cId);
+                if (recordId) params.append('record_id', recordId);
+                if (pType) params.append('payment_type', pType);
+                if (pDate) params.append('date', pDate);
+                params.append('is_received', isChecked ? '1' : '0');
+
+                fetch(`${window.APP_CONFIG.baseUrl}/api/reports/toggle`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: params.toString()
+                }).then(res => res.json())
+                .then(res => {
+                    if (res.success) {
+                        if (isApproval) {
+                            // Update client in local state so Client Data table stays synced
+                            const cl = state.clients.find(c => c.id === cId);
+                            if (cl) {
+                                cl.receiving = isChecked ? 'Received' : 'Pending';
+                                cl.is_received = isChecked ? 1 : 0;
+                            }
+                        }
+                        const label = isApproval ? 'Approval Payment' : 'Residual Payment';
+                        showToast('success', 'Status Updated', `${label} marked as ${isChecked ? 'Received' : 'Pending'}.`);
+                    }
+                }).catch(err => console.log('Ledger toggle offline sync', err));
+            }
+        });
+    });
+
+    // Scroll to top of ledger view smoothly
+    ledgerView.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function exitClientLedgerOnClientsPage() {
+    const ledgerView = document.getElementById('clientLedgerView');
+    const toolbar = document.getElementById('clientsToolbar');
+    const tableWrapper = document.getElementById('clientsTableWrapper');
+
+    if (ledgerView) ledgerView.style.display = 'none';
+    if (toolbar) toolbar.style.display = '';
+    if (tableWrapper) tableWrapper.style.display = '';
+}

@@ -25,7 +25,7 @@ require VIEWS_PATH . '/admin/layouts/header.php';
     </div>
 
     <!-- Clean Toolbar: Search, Filter Dropdowns, Pagination Controls -->
-    <div class="crm-toolbar">
+    <div class="crm-toolbar" id="clientsToolbar">
         <div class="toolbar-left">
             <!-- Search Input -->
             <div class="search-box-pill">
@@ -74,23 +74,10 @@ require VIEWS_PATH . '/admin/layouts/header.php';
                 <span>Reset</span>
             </button>
         </div>
-
-        <!-- Right Toolbar: Per Page Controls -->
-        <div class="toolbar-right">
-            <div class="per-page-wrapper">
-                <label for="selectRowsPerPage" class="per-page-label">Per page:</label>
-                <select id="selectRowsPerPage" class="per-page-select">
-                    <option value="10" selected>10</option>
-                    <option value="25">25</option>
-                    <option value="50">50</option>
-                    <option value="100">100</option>
-                </select>
-            </div>
-        </div>
     </div>
 
     <!-- Client Data Table Outer Card -->
-    <div class="table-outer-wrapper">
+    <div class="table-outer-wrapper" id="clientsTableWrapper">
         <div class="table-scroll-container">
             <table class="crm-data-table" id="clientsTable">
                 <thead>
@@ -199,7 +186,7 @@ require VIEWS_PATH . '/admin/layouts/header.php';
                     <!-- Inline Table Input Row (Shown on clicking Add New Client) -->
                     <tr class="inline-entry-row" id="inlineAddRow" title="Type client data and press Enter to save">
                         <td>
-                            <input type="date" class="tbl-input" id="tblDate">
+                            <input type="date" class="tbl-input" id="tblDate" value="<?= date('Y-m-d') ?>">
                         </td>
                         <td>
                             <input type="text" class="tbl-input font-bold" id="tblClientName" placeholder="Client Name...">
@@ -261,11 +248,16 @@ require VIEWS_PATH . '/admin/layouts/header.php';
                             <div class="tbl-calc-badge text-main" id="tblApprovalAmount">-</div>
                         </td>
                         <td>
-                            <select class="tbl-select" id="tblReceiving">
-                                <option value="">-- Receiving --</option>
-                                <option value="Pending">Pending</option>
-                                <option value="Received">Received</option>
-                            </select>
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                                <select class="tbl-select" id="tblReceiving" style="flex: 1;">
+                                    <option value="">-- Receiving --</option>
+                                    <option value="Pending">Pending</option>
+                                    <option value="Received">Received</option>
+                                </select>
+                                <button type="button" class="btn-inline-save" id="btnSaveInlineClient" title="Save Client (or press Enter)">
+                                    <i class="fa-solid fa-check"></i>
+                                </button>
+                            </div>
                         </td>
                     </tr>
                 </thead>
@@ -275,19 +267,8 @@ require VIEWS_PATH . '/admin/layouts/header.php';
             </table>
         </div>
 
-        <!-- Table Bottom Pagination Footer -->
-        <div class="table-pagination-footer" id="tablePaginationFooter">
-            <span class="pagination-range-text" id="tableResultsCount">1 &ndash; 10 of 12</span>
-            <div class="table-sheet-tabs-container" id="tableSheetTabsContainer">
-                <!-- Dynamic Sheet Tabs populated by JS -->
-            </div>
-            <div class="pagination-arrow-group" id="paginationControls">
-                <!-- Dynamic arrow & number buttons -->
-            </div>
-        </div>
-
         <!-- Empty State -->
-        <div class="empty-table-state" id="emptyState">
+        <div class="empty-table-state" id="emptyState" style="display: none;">
             <div class="empty-icon-wrap">
                 <i class="fa-solid fa-folder-open"></i>
             </div>
@@ -297,6 +278,65 @@ require VIEWS_PATH . '/admin/layouts/header.php';
                 <i class="fa-solid fa-plus"></i>
                 <span>Add New Client</span>
             </button>
+        </div>
+
+        <!-- Table Bottom Pagination Footer (Always visible to keep Month tabs accessible) -->
+        <div class="table-pagination-footer" id="tablePaginationFooter">
+            <span class="pagination-range-text" id="tableResultsCount">Showing 0 clients</span>
+            <div class="table-sheet-tabs-container" id="tableSheetTabsContainer">
+                <!-- Dynamic Sheet Tabs populated by JS -->
+            </div>
+            <div class="pagination-arrow-group" id="paginationControls">
+                <!-- Dynamic arrow & number buttons -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Client Statement Ledger View (Shown when clicking a client name) -->
+    <div class="table-outer-wrapper reports-table-wrapper" id="clientLedgerView" style="display: none;">
+        <div class="client-ledger-banner" id="clientLedgerBanner">
+            <div class="ledger-banner-content">
+                <div class="ledger-banner-left">
+                    <span class="ledger-banner-avatar"><i class="fa-solid fa-user-check"></i></span>
+                    <div class="ledger-client-name" id="ledgerClientName">Client Name</div>
+                </div>
+                <div class="ledger-banner-right">
+                    <button type="button" class="btn-exit-ledger" id="btnExitLedger" title="Return to client list">
+                        <i class="fa-solid fa-arrow-left"></i>
+                        <span>Back to Client Data</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-scroll-container">
+            <table class="crm-data-table" id="clientStatementTable">
+                <thead>
+                    <tr>
+                        <th class="col-rep-date">
+                            <div class="th-wrap"><span>Payment Date</span></div>
+                        </th>
+                        <th class="col-rep-name">
+                            <div class="th-wrap"><span>Client Name</span></div>
+                        </th>
+                        <th class="col-rep-plan">
+                            <div class="th-wrap"><span>Plan</span></div>
+                        </th>
+                        <th class="col-rep-initial">
+                            <div class="th-wrap"><span>Approval Payment</span></div>
+                        </th>
+                        <th class="col-rep-residual">
+                            <div class="th-wrap"><span>Residual</span></div>
+                        </th>
+                        <th class="col-rep-receiving">
+                            <div class="th-wrap"><span>Receiving</span></div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody id="clientStatementTableBody">
+                    <!-- Populated dynamically via JS -->
+                </tbody>
+            </table>
         </div>
     </div>
 </section>

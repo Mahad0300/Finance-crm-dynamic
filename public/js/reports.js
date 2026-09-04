@@ -16,16 +16,33 @@ let savedWeeklyReportState = null;
 function getCombinedReportClients() {
     if (!combinedReportClients) {
         if (window.APP_CONFIG && Array.isArray(window.APP_CONFIG.databaseReports)) {
-            combinedReportClients = window.APP_CONFIG.databaseReports.map(c => ({
-                id: c.client_id ? Number(c.client_id) : Number(c.id),
-                date: c.date || c.initial_payment_date || '',
-                clientName: c.client_name || c.clientName || '',
-                plan: c.plan ? Number(c.plan) : null,
-                approvalPayment: (c.approval_payment !== null && c.approval_payment !== undefined && c.approval_payment !== '') ? Number(c.approval_payment) : null,
-                residual: (c.residual_payment !== null && c.residual_payment !== undefined && c.residual_payment !== '') ? Number(c.residual_payment) : null,
-                paymentType: c.payment_type || 'Approval Payment',
-                isReceived: c.receiving === 'Received' || Boolean(Number(c.is_received))
-            }));
+            combinedReportClients = window.APP_CONFIG.databaseReports.map(c => {
+                const pType = c.payment_type || '';
+                const isApproval = (pType.toLowerCase().includes('approval')) || (c.approval_payment !== null && c.approval_payment !== undefined && c.approval_payment !== '' && Number(c.approval_payment) > 0);
+                
+                let isReceived = false;
+                if (c.is_received !== undefined && c.is_received !== null) {
+                    isReceived = Boolean(Number(c.is_received));
+                } else if (isApproval) {
+                    isReceived = (c.receiving === 'Received');
+                }
+
+                const recId = c.record_id ? Number(c.record_id) : (c.report_id ? Number(c.id) : null);
+                const clientId = c.client_id ? Number(c.client_id) : Number(c.id);
+
+                return {
+                    id: clientId,
+                    clientId: clientId,
+                    recordId: recId,
+                    date: c.date || c.receiving_payment_date || c.initial_payment_date || '',
+                    clientName: c.client_name || c.clientName || '',
+                    plan: c.plan ? Number(c.plan) : null,
+                    approvalPayment: isApproval ? Number(c.approval_payment) : null,
+                    residual: (!isApproval && c.residual_payment !== null && c.residual_payment !== undefined && c.residual_payment !== '') ? Number(c.residual_payment) : (c.residual ? Number(c.residual) : null),
+                    paymentType: pType || (isApproval ? 'Approval Payment' : 'Residual Payment'),
+                    isReceived: isReceived
+                };
+            });
         } else {
             combinedReportClients = [];
         }
@@ -129,11 +146,15 @@ function renderCombinedReportsTable() {
 
         const planDisplay = client.plan ? `${client.plan} ${parseInt(client.plan) === 1 ? 'Month' : 'Months'}` : `<span class="text-muted-dash">-</span>`;
 
+        const now = new Date();
+        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        const isFuture = client.date > todayStr;
+
         tr.innerHTML = `
             <td class="cell-rep-date font-mono">${formatDateDisplay(client.date)}</td>
             <td class="cell-rep-name font-bold">
                 <span class="client-name-link" data-client-id="${client.id}" title="Click to view full transaction ledger for ${escapeHtml(client.clientName)}">
-                    ${escapeHtml(client.clientName)}
+                    <span class="client-name-text">${escapeHtml(client.clientName)}</span>
                     <i class="fa-solid fa-arrow-up-right-from-square client-name-link-icon"></i>
                 </span>
             </td>
@@ -141,11 +162,16 @@ function renderCombinedReportsTable() {
             <td class="currency-val cell-rep-initial font-bold">${approvalDisplay}</td>
             <td class="currency-val cell-rep-residual font-bold text-primary">${residualDisplay}</td>
             <td class="cell-rep-checkbox">
-                <label class="crm-custom-chk" title="Toggle Received Status">
+                <label class="crm-custom-chk ${isFuture ? 'chk-disabled' : ''}" 
+                       title="${isFuture ? 'Cannot mark as received: Date (' + formatDateDisplay(client.date) + ') is in the future' : 'Toggle Received Status'}">
                     <input type="checkbox" 
                         class="crm-chk-native rep-receiving-checkbox" 
-                        data-combined-id="${client.id}" 
-                        ${client.isReceived ? 'checked' : ''}>
+                        data-combined-id="${client.clientId || client.id}" 
+                        data-record-id="${client.recordId || ''}"
+                        data-payment-type="${client.paymentType || ((client.approvalPayment && client.approvalPayment > 0) ? 'Approval Payment' : 'Residual Payment')}"
+                        data-date="${client.date}"
+                        ${client.isReceived ? 'checked' : ''}
+                        ${isFuture ? 'disabled' : ''}>
                     <span class="crm-chk-box">
                         <i class="fa-solid fa-check"></i>
                     </span>
@@ -155,22 +181,51 @@ function renderCombinedReportsTable() {
         tbody.appendChild(tr);
     });
 
-    // Checkbox toggle listeners & AJAX database sync
-    tbody.querySelectorAll('.rep-receiving-checkbox').forEach(chk => {
+    // Checkbox toggle listeners & AJAX database sync (only enabled <= today)
+    tbody.querySelectorAll('.rep-receiving-checkbox:not(:disabled)').forEach(chk => {
         chk.addEventListener('change', (e) => {
             const cId = parseInt(e.target.getAttribute('data-combined-id'), 10);
+            const recordId = e.target.getAttribute('data-record-id');
+            const pType = e.target.getAttribute('data-payment-type');
+            const pDate = e.target.getAttribute('data-date');
             const isChecked = e.target.checked;
-            const targetClient = getCombinedReportClients().find(c => c.id === cId);
+
+            const targetClient = getCombinedReportClients().find(c => {
+                if (recordId && c.recordId && String(c.recordId) === String(recordId)) return true;
+                return (c.clientId === cId || c.id === cId) && c.date === pDate && c.paymentType === pType;
+            });
             if (targetClient) {
                 targetClient.isReceived = isChecked;
             }
 
-            // AJAX sync with backend API
+            // Instantly sum all currently checked rows in this week's report
+            const checkedTotal = getCombinedReportClients()
+                .filter(c => c.isReceived)
+                .reduce((sum, c) => sum + (parseFloat(c.approvalPayment || c.residual) || 0), 0);
+
+            const inputTotalReceived = document.getElementById('inputTotalReceived');
+            if (inputTotalReceived) {
+                inputTotalReceived.value = checkedTotal > 0 ? checkedTotal : '';
+            }
+
+            // Immediately update remaining balance and footers
+            updateCombinedTotals();
+            doSyncFooter();
+
+            // Sync to server
             if (window.APP_CONFIG && window.APP_CONFIG.baseUrl) {
+                const params = new URLSearchParams();
+                params.append('client_id', cId);
+                params.append('id', cId);
+                if (recordId) params.append('record_id', recordId);
+                if (pType) params.append('payment_type', pType);
+                if (pDate) params.append('date', pDate);
+                params.append('is_received', isChecked ? '1' : '0');
+
                 fetch(`${window.APP_CONFIG.baseUrl}/api/reports/toggle`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: `id=${cId}&is_received=${isChecked ? 1 : 0}`
+                    body: params.toString()
                 }).catch(err => console.log('Report toggle offline sync', err));
             }
         });
@@ -326,9 +381,17 @@ function switchWeeklyCycle(startDate) {
                 // Update inputTotalReceived
                 const inputTotalReceived = document.getElementById('inputTotalReceived');
                 if (inputTotalReceived) {
-                    inputTotalReceived.value = (data.summary && data.summary.total_received_entered) 
+                    const savedVal = (data.summary && data.summary.total_received_entered !== null && data.summary.total_received_entered !== undefined) 
                         ? Number(data.summary.total_received_entered) 
-                        : '';
+                        : 0;
+                    if (savedVal > 0) {
+                        inputTotalReceived.value = savedVal;
+                    } else {
+                        const checkedSum = (data.records || [])
+                            .filter(r => r.receiving === 'Received' || Number(r.is_received) === 1)
+                            .reduce((sum, r) => sum + (parseFloat(r.approval_payment || r.residual_payment) || 0), 0);
+                        inputTotalReceived.value = checkedSum > 0 ? checkedSum : '';
+                    }
                 }
 
                 // Sync select dropdown & custom dropdown UI
@@ -446,6 +509,12 @@ function renderClientLedger(data) {
             ? formatCurrency(resAmount) 
             : `<span class="text-muted-dash">-</span>`;
 
+        const now = new Date();
+        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        const isFuture = rec.date > todayStr;
+        const isApprovalRow = (appAmount > 0);
+        const clientId = data.client.id;
+
         tr.innerHTML = `
             <td class="cell-rep-date font-mono">${formatDateDisplay(rec.date)}</td>
             <td class="cell-rep-name font-bold">${escapeHtml(data.client.name)}</td>
@@ -453,11 +522,17 @@ function renderClientLedger(data) {
             <td class="currency-val cell-rep-initial font-bold">${approvalDisplay}</td>
             <td class="currency-val cell-rep-residual font-bold text-primary">${residualDisplay}</td>
             <td class="cell-rep-checkbox text-center">
-                <label class="crm-custom-chk" title="Status: ${escapeHtml(rec.receiving)}">
+                <label class="crm-custom-chk ${isFuture ? 'chk-disabled' : ''}" 
+                       title="${isFuture ? 'Cannot mark as received: Date (' + formatDateDisplay(rec.date) + ') is in the future' : 'Click to toggle received status'}">
                     <input type="checkbox" 
-                        class="crm-chk-native" 
+                        class="crm-chk-native reports-ledger-receiving-checkbox" 
+                        data-client-id="${clientId}"
+                        data-record-id="${rec.record_id || ''}"
+                        data-is-approval="${isApprovalRow ? '1' : '0'}"
+                        data-payment-type="${rec.payment_type || (isApprovalRow ? 'Approval Payment' : 'Residual Payment')}"
+                        data-date="${rec.date}"
                         ${rec.is_received ? 'checked' : ''} 
-                        disabled>
+                        ${isFuture ? 'disabled' : ''}>
                     <span class="crm-chk-box">
                         <i class="fa-solid fa-check"></i>
                     </span>
@@ -465,6 +540,51 @@ function renderClientLedger(data) {
             </td>
         `;
         tbody.appendChild(tr);
+    });
+
+    // Checkbox toggle listener in Reports client ledger (only active for enabled rows <= today)
+    tbody.querySelectorAll('.reports-ledger-receiving-checkbox:not(:disabled)').forEach(chk => {
+        chk.addEventListener('change', (e) => {
+            const cId = parseInt(e.target.getAttribute('data-client-id'), 10);
+            const recordId = e.target.getAttribute('data-record-id');
+            const pType = e.target.getAttribute('data-payment-type');
+            const pDate = e.target.getAttribute('data-date');
+            const isApproval = e.target.getAttribute('data-is-approval') === '1';
+            const isChecked = e.target.checked;
+
+            if (window.APP_CONFIG && window.APP_CONFIG.baseUrl) {
+                const params = new URLSearchParams();
+                params.append('client_id', cId);
+                params.append('id', cId);
+                if (recordId) params.append('record_id', recordId);
+                if (pType) params.append('payment_type', pType);
+                if (pDate) params.append('date', pDate);
+                params.append('is_received', isChecked ? '1' : '0');
+
+                fetch(`${window.APP_CONFIG.baseUrl}/api/reports/toggle`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: params.toString()
+                }).then(res => res.json())
+                .then(res => {
+                    if (res.success) {
+                        const label = isApproval ? 'Approval Payment' : 'Residual Payment';
+                        showToast('success', 'Status Updated', `${label} marked as ${isChecked ? 'Received' : 'Pending'}.`);
+
+                        // Keep in-memory combinedReportClients synced
+                        if (combinedReportClients) {
+                            const match = combinedReportClients.find(c => {
+                                if (recordId && c.recordId && String(c.recordId) === String(recordId)) return true;
+                                return (c.clientId === cId || c.id === cId) && c.date === pDate;
+                            });
+                            if (match) {
+                                match.isReceived = isChecked;
+                            }
+                        }
+                    }
+                }).catch(err => console.log('Ledger toggle offline sync', err));
+            }
+        });
     });
 
     // Hide table footer when viewing single client ledger
@@ -518,12 +638,20 @@ function updateReportLiveHeaderDate() {
 function initReportsPage() {
     updateReportLiveHeaderDate();
 
-    // Set initial total received value from database if present
+    // Set initial total received value from database if present or from checked rows
     const inputTotalReceived = document.getElementById('inputTotalReceived');
-    if (inputTotalReceived && window.APP_CONFIG && window.APP_CONFIG.activeReportSummary) {
+    if (inputTotalReceived && window.APP_CONFIG) {
         const summary = window.APP_CONFIG.activeReportSummary;
-        if (summary.total_received_entered !== null && summary.total_received_entered !== undefined) {
-            inputTotalReceived.value = Number(summary.total_received_entered);
+        const savedVal = (summary && summary.total_received_entered !== null && summary.total_received_entered !== undefined) 
+            ? Number(summary.total_received_entered) 
+            : 0;
+        if (savedVal > 0) {
+            inputTotalReceived.value = savedVal;
+        } else {
+            const checkedSum = (window.APP_CONFIG.databaseReports || [])
+                .filter(r => r.receiving === 'Received' || Number(r.is_received) === 1)
+                .reduce((sum, r) => sum + (parseFloat(r.approval_payment || r.residual_payment) || 0), 0);
+            inputTotalReceived.value = checkedSum > 0 ? checkedSum : '';
         }
     }
 

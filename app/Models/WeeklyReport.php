@@ -30,9 +30,9 @@ class WeeklyReport extends Model {
         $auditDate = date('Y-m-d', $auditTimestamp);
         $dueDate = date('Y-m-d', $dueTimestamp);
 
-        $baseTimestamp = strtotime('2026-06-01');
-        $diffWeeks = (int)round(($mondayTimestamp - $baseTimestamp) / (7 * 86400));
-        $weekNumber = max(1, $diffWeeks + 1);
+        // Calculate week number within its month based on Monday's day of month (1 to 5)
+        $dayOfMonth = (int)date('j', $mondayTimestamp);
+        $weekNumber = (int)ceil($dayOfMonth / 7);
 
         $startFormatted = date('M d', $mondayTimestamp);
         $endFormatted = date('M d, Y', $sundayTimestamp);
@@ -69,7 +69,6 @@ class WeeklyReport extends Model {
         $sql = "SELECT DISTINCT `initial_payment_date` 
                 FROM `clients` 
                 WHERE `status` = 'Charged'
-                  AND `receiving` = 'Received'
                   AND `initial_payment_date` IS NOT NULL 
                   AND `initial_payment_date` != '' 
                   AND `initial_payment_date` != '0000-00-00'
@@ -77,13 +76,34 @@ class WeeklyReport extends Model {
         $dates = $this->fetchAll($sql);
 
         $weeksMap = [];
+
+        // 1. Any existing generated weekly reports in database whose Tuesday audit date has arrived
+        $saved = $this->fetchAll("SELECT `id`, `title`, `start_date`, `end_date` FROM `weekly_reports`");
+        if ($saved) {
+            foreach ($saved as $sr) {
+                $meta = $this->getWeekMeta($sr['start_date']);
+                // Strict business rule: Only include completed weeks whose Tuesday audit date has arrived
+                if ($meta['audit_date'] <= $today) {
+                    if (!empty($sr['title'])) {
+                        $meta['title'] = $sr['title'];
+                        if (preg_match('/^Week\s+(\d+)/i', $sr['title'], $m)) {
+                            $meta['week_number'] = (int)$m[1];
+                            $meta['week_label'] = "Week " . $m[1];
+                        }
+                    }
+                    $key = $meta['start_date'] . '_' . $meta['end_date'];
+                    $weeksMap[$key] = $meta;
+                }
+            }
+        }
+
+        // 2. Any weeks from clients initial_payment_date whose Tuesday audit date has arrived
         foreach ($dates as $row) {
             $d = $row['initial_payment_date'];
             $meta = $this->getWeekMeta($d);
 
-            // Only completed weeks whose audit day has arrived
-            // (e.g. week Aug 31 - Sep 06 will only show up on or after Tue, Sep 08)
-            if ($meta['end_date'] < $today && $meta['audit_date'] <= $today) {
+            // Strict business rule: Only available once Tuesday (audit day) arrives
+            if ($meta['audit_date'] <= $today) {
                 $key = $meta['start_date'] . '_' . $meta['end_date'];
                 if (!isset($weeksMap[$key])) {
                     $weeksMap[$key] = $meta;
@@ -91,7 +111,7 @@ class WeeklyReport extends Model {
             }
         }
 
-        // Sort weeks descending (latest completed week first)
+        // Sort weeks descending (latest completed & audited week first)
         uasort($weeksMap, function($a, $b) {
             return strcmp($b['start_date'], $a['start_date']);
         });
@@ -114,20 +134,51 @@ class WeeklyReport extends Model {
     public function getWeeklyTransactions(string $mondayDate, string $sundayDate): array {
         if (!$this->isConnected()) return [];
 
-        // 1. New Approvals signed up during this Monday-Sunday week (Only Charged & Received)
-        $sqlNew = "SELECT `id`, `initial_payment_date` as `date`, `client_name`, `plan`, 
+        // 1. Check if records exist in weekly_report_records for this week's report
+        $report = $this->fetchOne("SELECT `id` FROM `weekly_reports` WHERE `start_date` = :start_date AND `end_date` = :end_date LIMIT 1", [
+            ':start_date' => $mondayDate,
+            ':end_date'   => $sundayDate
+        ]);
+
+        if ($report) {
+            $sql = "SELECT 
+                        r.id,
+                        r.id as record_id,
+                        r.report_id,
+                        r.client_id,
+                        r.initial_payment_date,
+                        r.receiving_payment_date as `date`,
+                        r.payment_type,
+                        r.is_received,
+                        c.client_name,
+                        c.plan,
+                        CASE WHEN r.payment_type = 'Approval Payment' THEN c.approval_amount ELSE NULL END as approval_payment,
+                        CASE WHEN r.payment_type = 'Residual Payment' THEN c.residual ELSE NULL END as residual_payment,
+                        c.receiving
+                    FROM `weekly_report_records` r
+                    INNER JOIN `clients` c ON c.id = r.client_id
+                    WHERE r.report_id = :report_id
+                    ORDER BY r.receiving_payment_date ASC, r.id ASC";
+            $records = $this->fetchAll($sql, [':report_id' => $report['id']]);
+            if (!empty($records)) {
+                return $records;
+            }
+        }
+
+        // 2. New Approvals signed up during this Monday-Sunday week (All Charged clients, whether Pending or Received)
+        $sqlNew = "SELECT `id`, `initial_payment_date` as `date`, `initial_payment_date`, `client_name`, `plan`, 
                           `approval_amount` as `approval_payment`, NULL as `residual_payment`, 
-                          'Approval Payment' as `payment_type`, `receiving`, `id` as `client_id`
+                          'Approval Payment' as `payment_type`, `receiving`, `id` as `client_id`,
+                          CASE WHEN `receiving` = 'Received' THEN 1 ELSE 0 END as `is_received`
                    FROM `clients`
                    WHERE `status` = 'Charged'
-                     AND `receiving` = 'Received'
                      AND `initial_payment_date` >= :start_date 
                      AND `initial_payment_date` <= :end_date
                    ORDER BY `initial_payment_date` ASC, `id` ASC";
         $stmtNew = $this->query($sqlNew, [':start_date' => $mondayDate, ':end_date' => $sundayDate]);
         $newApprovals = $stmtNew ? $stmtNew->fetchAll(\PDO::FETCH_ASSOC) : [];
 
-        // 2. Build map of the 7 days in this week (Monday through Sunday)
+        // 3. Build map of the 7 days in this week (Monday through Sunday)
         $workDays = [];
         $curr = strtotime($mondayDate);
         $sun = strtotime($sundayDate);
@@ -142,11 +193,10 @@ class WeeklyReport extends Model {
             $curr = strtotime('+1 day', $curr);
         }
 
-        // 3. Recurring Residuals from clients created before this week (Only Charged & Received)
+        // 4. Recurring Residuals from clients created before this week (All Charged clients)
         $sqlPast = "SELECT `id`, `initial_payment_date`, `client_name`, `plan`, `residual`, `receiving`
                     FROM `clients`
                     WHERE `status` = 'Charged'
-                      AND `receiving` = 'Received'
                       AND `initial_payment_date` < :start_date 
                       AND `residual` > 0
                     ORDER BY `id` ASC";
@@ -168,15 +218,17 @@ class WeeklyReport extends Model {
                     
                     if ($wd['day'] === $targetDay) {
                         $residuals[] = [
-                            'id'               => (int)$pc['id'],
-                            'client_id'        => (int)$pc['id'],
-                            'date'             => $wd['date_str'],
-                            'client_name'      => $pc['client_name'],
-                            'plan'             => $pc['plan'],
-                            'approval_payment' => null,
-                            'residual_payment' => $pc['residual'],
-                            'payment_type'     => "Month " . ($monthsElapsed + 1) . " Residual",
-                            'receiving'        => $pc['receiving']
+                            'id'                   => (int)$pc['id'],
+                            'client_id'            => (int)$pc['id'],
+                            'initial_payment_date' => $pc['initial_payment_date'],
+                            'date'                 => $wd['date_str'],
+                            'client_name'          => $pc['client_name'],
+                            'plan'                 => $pc['plan'],
+                            'approval_payment'     => null,
+                            'residual_payment'     => $pc['residual'],
+                            'payment_type'         => 'Residual Payment',
+                            'receiving'            => 'Pending',
+                            'is_received'          => 0
                         ];
                     }
                 }
@@ -192,7 +244,44 @@ class WeeklyReport extends Model {
             return $cmp;
         });
 
+        // 5. If weekly_report exists but has no records yet, sync them to weekly_report_records
+        if ($report && !empty($allTransactions)) {
+            $this->syncWeeklyReportRecords((int)$report['id'], $allTransactions);
+        }
+
         return $allTransactions;
+    }
+
+    public function syncWeeklyReportRecords(int $reportId, array $transactions): void {
+        if (!$this->isConnected() || empty($transactions)) return;
+        
+        $insertSql = "INSERT INTO `weekly_report_records` 
+                      (`report_id`, `client_id`, `initial_payment_date`, `receiving_payment_date`, `payment_type`, `is_received`)
+                      VALUES (:report_id, :client_id, :initial_date, :recv_date, :payment_type, :is_received)";
+                      
+        foreach ($transactions as $t) {
+            $cId = (int)($t['client_id'] ?? $t['id']);
+            $initDate = $t['initial_payment_date'] ?? $t['date'];
+            $recvDate = $t['date'];
+            $pType = (strpos($t['payment_type'], 'Residual') !== false) ? 'Residual Payment' : 'Approval Payment';
+            $isReceived = (strtolower((string)($t['receiving'] ?? '')) === 'received' || !empty($t['is_received'])) ? 1 : 0;
+            
+            $exists = $this->fetchOne(
+                "SELECT `id` FROM `weekly_report_records` 
+                 WHERE `report_id` = :report_id AND `client_id` = :client_id AND `payment_type` = :payment_type LIMIT 1",
+                [':report_id' => $reportId, ':client_id' => $cId, ':payment_type' => $pType]
+            );
+            if (!$exists) {
+                $this->query($insertSql, [
+                    ':report_id'    => $reportId,
+                    ':client_id'    => $cId,
+                    ':initial_date' => $initDate,
+                    ':recv_date'    => $recvDate,
+                    ':payment_type' => $pType,
+                    ':is_received'  => $isReceived
+                ]);
+            }
+        }
     }
 
     /**
@@ -291,11 +380,65 @@ class WeeklyReport extends Model {
         ]);
     }
 
-    public function toggleClientReceived(int $clientId, int $isReceived): bool {
+    public function toggleTransactionReceived(
+        int $clientId, 
+        int $isReceived, 
+        ?int $recordId = null, 
+        ?string $paymentType = null, 
+        ?string $date = null
+    ): bool {
         if (!$this->isConnected()) return false;
-        $receiving = $isReceived ? 'Received' : 'Pending';
-        $sql = "UPDATE `clients` SET `receiving` = :receiving WHERE `id` = :id";
-        return $this->query($sql, [':id' => $clientId, ':receiving' => $receiving]) !== null;
+
+        $isApproval = false;
+        if ($paymentType) {
+            $isApproval = (stripos($paymentType, 'approval') !== false);
+        }
+
+        // 1. If we have a specific record_id from weekly_report_records
+        if ($recordId && $recordId > 0) {
+            $this->query("UPDATE `weekly_report_records` SET `is_received` = :is_received, `updated_at` = NOW() WHERE `id` = :record_id", [
+                ':record_id'   => $recordId,
+                ':is_received' => $isReceived
+            ]);
+
+            // Determine if this record is an Approval Payment
+            $rec = $this->fetchOne("SELECT `payment_type`, `client_id` FROM `weekly_report_records` WHERE `id` = :id", [':id' => $recordId]);
+            if ($rec) {
+                $isApproval = (stripos($rec['payment_type'], 'approval') !== false);
+                $clientId = (int)$rec['client_id'];
+            }
+        } 
+        // 2. Otherwise update by client_id, payment_type, and receiving_payment_date
+        else if ($clientId > 0) {
+            $normType = $isApproval ? 'Approval Payment' : 'Residual Payment';
+            $params = [
+                ':client_id'    => $clientId,
+                ':payment_type' => $normType,
+                ':is_received'  => $isReceived
+            ];
+            $sql = "UPDATE `weekly_report_records` SET `is_received` = :is_received, `updated_at` = NOW() WHERE `client_id` = :client_id AND `payment_type` = :payment_type";
+            if ($date) {
+                $sql .= " AND `receiving_payment_date` = :date";
+                $params[':date'] = $date;
+            }
+            $this->query($sql, $params);
+        }
+
+        // 3. ONLY update clients.receiving if this transaction is an Approval Payment!
+        // Residual payments are independent and must NEVER alter clients.receiving!
+        if ($isApproval && $clientId > 0) {
+            $receiving = $isReceived ? 'Received' : 'Pending';
+            $this->query("UPDATE `clients` SET `receiving` = :receiving WHERE `id` = :id", [
+                ':id'        => $clientId,
+                ':receiving' => $receiving
+            ]);
+        }
+
+        return true;
+    }
+
+    public function toggleClientReceived(int $clientId, int $isReceived): bool {
+        return $this->toggleTransactionReceived($clientId, $isReceived, null, 'Approval Payment');
     }
 
     public function updateFooterTotals(int $reportId, ?float $totalReceived, ?float $totalRemaining, ?float $totalTarget = null): bool {
@@ -376,8 +519,31 @@ class WeeklyReport extends Model {
 
         $statement = [];
         $meta1 = $this->getWeekMeta($initDate);
+
+        // Fetch all existing weekly_report_records for this client to read true independent transaction states
+        $existingRecords = $this->fetchAll(
+            "SELECT `id`, `report_id`, `payment_type`, `receiving_payment_date`, `is_received` 
+             FROM `weekly_report_records` 
+             WHERE `client_id` = :cid",
+            [':cid' => $clientId]
+        );
+        $recordsMap = [];
+        foreach ($existingRecords as $er) {
+            $typeKey = (stripos($er['payment_type'], 'approval') !== false) ? 'approval' : 'residual';
+            $recordsMap[$er['receiving_payment_date'] . '_' . $typeKey] = $er;
+        }
+
+        // Upfront Approval Payment row
+        $appKey = $initDate . '_approval';
+        $appRec = $recordsMap[$appKey] ?? null;
+        $appReceived = $appRec 
+            ? ((int)$appRec['is_received'] === 1) 
+            : (strtolower((string)$client['receiving']) === 'received' || $client['receiving'] == 1);
+        $appRecordId = $appRec ? (int)$appRec['id'] : null;
+
         $statement[] = [
             'id'               => (int)$client['id'],
+            'record_id'        => $appRecordId,
             'client_id'        => (int)$client['id'],
             'client_name'      => $client['client_name'],
             'date'             => $initDate,
@@ -386,8 +552,8 @@ class WeeklyReport extends Model {
             'week_title'       => $meta1['title'],
             'approval_payment' => (float)$client['approval_amount'],
             'residual_payment' => null,
-            'receiving'        => $client['receiving'],
-            'is_received'      => (strtolower((string)$client['receiving']) === 'received' || $client['receiving'] == 1)
+            'receiving'        => $appReceived ? 'Received' : 'Pending',
+            'is_received'      => $appReceived
         ];
 
         $planMonths = (int)($client['plan'] ?: 12);
@@ -412,8 +578,15 @@ class WeeklyReport extends Model {
 
             $metaM = $this->getWeekMeta($resDate);
 
+            // Look up specific residual record for this month/date in weekly_report_records
+            $resKey = $resDate . '_residual';
+            $resRec = $recordsMap[$resKey] ?? null;
+            $resReceived = $resRec ? ((int)$resRec['is_received'] === 1) : false;
+            $resRecordId = $resRec ? (int)$resRec['id'] : null;
+
             $statement[] = [
                 'id'               => (int)$client['id'],
+                'record_id'        => $resRecordId,
                 'client_id'        => (int)$client['id'],
                 'client_name'      => $client['client_name'],
                 'date'             => $resDate,
@@ -422,8 +595,8 @@ class WeeklyReport extends Model {
                 'week_title'       => $metaM['title'],
                 'approval_payment' => null,
                 'residual_payment' => (float)$client['residual'],
-                'receiving'        => $client['receiving'],
-                'is_received'      => (strtolower((string)$client['receiving']) === 'received' || $client['receiving'] == 1)
+                'receiving'        => $resReceived ? 'Received' : 'Pending',
+                'is_received'      => $resReceived
             ];
         }
 

@@ -43,6 +43,14 @@ function formatMoney(amount) {
 }
 
 function getDefaultDashboardMonth() {
+    if (state.clients && Array.isArray(state.clients) && state.clients.length > 0) {
+        const months = [...new Set(state.clients.map(c => (c.date || '').substring(0, 7)).filter(Boolean))].sort();
+        const currentCalendarMonth = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+        if (months.includes(currentCalendarMonth)) {
+            return currentCalendarMonth;
+        }
+        return months[months.length - 1];
+    }
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 }
@@ -65,13 +73,7 @@ function getFilteredDashboardClients() {
 
     if (dashboardDateFilter.mode === 'single-month') {
         const targetMonth = dashboardDateFilter.singleMonth || getDefaultDashboardMonth();
-        return state.clients.filter(c => {
-            const submitDate = c.date;
-            const chargeDate = c.initialPaymentDate || c.initial_payment_date || c.date;
-            const inMonthBySubmit = submitDate && submitDate.startsWith(targetMonth);
-            const inMonthByCharge = chargeDate && chargeDate.startsWith(targetMonth);
-            return inMonthBySubmit || inMonthByCharge;
-        });
+        return state.clients.filter(c => c.date && c.date.startsWith(targetMonth));
     }
 
     if (dashboardDateFilter.mode === 'month-range') {
@@ -81,10 +83,7 @@ function getFilteredDashboardClients() {
 
         return state.clients.filter(c => {
             const submitDate = c.date ? c.date.substring(0, 7) : '';
-            const chargeDate = (c.initialPaymentDate || c.initial_payment_date || c.date || '').substring(0, 7);
-            const inRangeBySubmit = submitDate && (!from || submitDate >= from) && (!to || submitDate <= to);
-            const inRangeByCharge = chargeDate && (!from || chargeDate >= from) && (!to || chargeDate <= to);
-            return inRangeBySubmit || inRangeByCharge;
+            return submitDate && (!from || submitDate >= from) && (!to || submitDate <= to);
         });
     }
 
@@ -137,8 +136,8 @@ function renderDashboard() {
     const totalSubmitAmount = submittedClients.reduce((sum, c) => sum + (parseFloat(c.approvalAmount) || parseFloat(c.initialPayment) || 0), 0);
     const submitCount = submittedClients.length;
 
-    // 2. Charged Clients (Only Charged & Received)
-    const chargedClients = clients.filter(c => c.status === 'Charged' && (String(c.receiving || '').toLowerCase() === 'received' || c.receiving === 1 || c.receiving === true));
+    // 2. Charged Clients (All deals approved/charged)
+    const chargedClients = clients.filter(c => c.status === 'Charged');
 
     // 3. Approval Amount, Residual, Total Receiving, Total Received, Total Remaining
     let totalApproval = 0;
@@ -175,31 +174,38 @@ function renderDashboard() {
                 totalReceiving = parseFloat(targetReport.total_receiving_target) || 0;
                 totalReceived = (targetReport.total_received_entered !== null) ? (parseFloat(targetReport.total_received_entered) || 0) : 0;
                 totalRemaining = (targetReport.total_remaining_balance !== null) ? (parseFloat(targetReport.total_remaining_balance) || 0) : Math.max(0, totalReceiving - totalReceived);
+                totalApproval = Math.max(0, totalReceiving - totalResidual);
             }
         }
     } else if (dashboardDateFilter.mode === 'single-month') {
         const targetMonth = dashboardDateFilter.singleMonth || getDefaultDashboardMonth();
+        
+        // 1. Approval Amount directly from all deals charged in this month
+        totalApproval = chargedClients.reduce((sum, c) => sum + (parseFloat(c.approvalAmount) || 0), 0);
+
+        // 2. Residuals & Received totals from this month's weekly summaries
         const monthSummaries = Object.values(summaries).filter(s => {
             if (s.cycle_month) return s.cycle_month === targetMonth;
-            return (s.start_date && s.start_date.startsWith(targetMonth)) || (s.end_date && s.end_date.startsWith(targetMonth));
+            return s.start_date && s.start_date.startsWith(targetMonth);
         });
 
         if (monthSummaries.length > 0) {
             totalApproval = monthSummaries.reduce((sum, s) => sum + (parseFloat(s.approval) || 0), 0);
             totalResidual = monthSummaries.reduce((sum, s) => sum + (parseFloat(s.residual) || 0), 0);
-            totalReceiving = monthSummaries.reduce((sum, s) => sum + (parseFloat(s.total_receiving) || 0), 0);
             totalReceived = monthSummaries.reduce((sum, s) => sum + (parseFloat(s.total_received) || 0), 0);
-            totalRemaining = monthSummaries.reduce((sum, s) => sum + (parseFloat(s.total_remaining) || 0), 0);
         } else {
             totalApproval = chargedClients.reduce((sum, c) => sum + (parseFloat(c.approvalAmount) || 0), 0);
             totalResidual = chargedClients.reduce((sum, c) => sum + (parseFloat(c.residual) || 0), 0);
-            totalReceiving = totalApproval + totalResidual;
             totalReceived = 0;
-            totalRemaining = totalReceiving;
         }
+        totalReceiving = totalApproval + totalResidual;
+        totalRemaining = Math.max(0, totalReceiving - totalReceived);
     } else if (dashboardDateFilter.mode === 'month-range') {
         const from = dashboardDateFilter.startMonth;
         const to = dashboardDateFilter.endMonth;
+        
+        totalApproval = chargedClients.reduce((sum, c) => sum + (parseFloat(c.approvalAmount) || 0), 0);
+
         const rangeSummaries = Object.values(summaries).filter(s => {
             const m = s.cycle_month || (s.start_date ? s.start_date.substring(0, 7) : '');
             if (from && m < from) return false;
@@ -208,18 +214,14 @@ function renderDashboard() {
         });
 
         if (rangeSummaries.length > 0) {
-            totalApproval = rangeSummaries.reduce((sum, s) => sum + (parseFloat(s.approval) || 0), 0);
             totalResidual = rangeSummaries.reduce((sum, s) => sum + (parseFloat(s.residual) || 0), 0);
-            totalReceiving = rangeSummaries.reduce((sum, s) => sum + (parseFloat(s.total_receiving) || 0), 0);
             totalReceived = rangeSummaries.reduce((sum, s) => sum + (parseFloat(s.total_received) || 0), 0);
-            totalRemaining = rangeSummaries.reduce((sum, s) => sum + (parseFloat(s.total_remaining) || 0), 0);
         } else {
-            totalApproval = chargedClients.reduce((sum, c) => sum + (parseFloat(c.approvalAmount) || 0), 0);
             totalResidual = chargedClients.reduce((sum, c) => sum + (parseFloat(c.residual) || 0), 0);
-            totalReceiving = totalApproval + totalResidual;
             totalReceived = 0;
-            totalRemaining = totalReceiving;
         }
+        totalReceiving = totalApproval + totalResidual;
+        totalRemaining = Math.max(0, totalReceiving - totalReceived);
     }
 
     const receivedPercentage = totalReceiving > 0 
@@ -354,7 +356,7 @@ function renderPerformanceLeaderboards(clientsList) {
                 agentMap[name] = { name, count: 0, amount: 0, totalLeads: 0 };
             }
             agentMap[name].totalLeads++;
-            if (c.status === 'Charged' && (String(c.receiving || '').toLowerCase() === 'received' || c.receiving === 1 || c.receiving === true)) {
+            if (c.status === 'Charged') {
                 agentMap[name].count++;
                 agentMap[name].amount += (parseFloat(c.approvalAmount) || parseFloat(c.initialPayment) || 0);
             }

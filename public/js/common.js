@@ -55,7 +55,7 @@ const state = {
     },
     pagination: {
         currentPage: 1,
-        rowsPerPage: 10
+        rowsPerPage: 450
     },
     clientToDeleteId: null,
     editingClientId: null,

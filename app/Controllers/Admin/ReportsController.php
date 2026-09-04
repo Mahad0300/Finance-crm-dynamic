@@ -91,11 +91,14 @@ class ReportsController extends Controller
 
     public function toggleCheckbox(): void
     {
-        $clientId = (int)($_POST['id'] ?? 0);
+        $clientId = (int)($_POST['client_id'] ?? $_POST['id'] ?? 0);
+        $recordId = !empty($_POST['record_id']) ? (int)$_POST['record_id'] : null;
+        $paymentType = !empty($_POST['payment_type']) ? trim((string)$_POST['payment_type']) : null;
+        $date = !empty($_POST['date']) ? trim((string)$_POST['date']) : null;
         $isReceived = (int)($_POST['is_received'] ?? 0);
 
         $reportModel = new WeeklyReport();
-        $updated = $reportModel->toggleClientReceived($clientId, $isReceived);
+        $updated = $reportModel->toggleTransactionReceived($clientId, $isReceived, $recordId, $paymentType, $date);
         $this->jsonResponse(['success' => $updated]);
     }
 

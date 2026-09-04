@@ -107,14 +107,14 @@ class Client extends Model {
             ':super_agent_name'     => $superAgentName,
             ':closer_id'            => $closerId,
             ':closer_name'          => $closerName,
-            ':status'               => !empty($data['status']) ? $data['status'] : null,
-            ':plan'                 => (isset($data['plan']) && $data['plan'] !== null && $data['plan'] !== '') ? (int)$data['plan'] : null,
+            ':status'               => !empty($data['status']) ? $data['status'] : 'Submit',
+            ':plan'                 => (isset($data['plan']) && $data['plan'] !== null && $data['plan'] !== '') ? (int)$data['plan'] : 12,
             ':monthly'              => $data['monthly'] ?? null,
             ':initial_payment'      => $data['initial_payment'] ?? null,
             ':initial_payment_date' => $data['initial_payment_date'] ?? null,
             ':residual'             => $data['residual'] ?? null,
             ':approval_amount'      => $data['approval_amount'] ?? null,
-            ':receiving'            => !empty($data['receiving']) ? $data['receiving'] : null,
+            ':receiving'            => !empty($data['receiving']) ? $data['receiving'] : 'Pending',
             ':created_by'           => $data['created_by'] ?? null,
         ]);
 
@@ -167,14 +167,14 @@ class Client extends Model {
             ':super_agent_name'     => $superAgentName,
             ':closer_id'            => $closerId,
             ':closer_name'          => $closerName,
-            ':status'               => !empty($data['status']) ? $data['status'] : null,
-            ':plan'                 => (isset($data['plan']) && $data['plan'] !== null && $data['plan'] !== '') ? (int)$data['plan'] : null,
+            ':status'               => !empty($data['status']) ? $data['status'] : 'Submit',
+            ':plan'                 => (isset($data['plan']) && $data['plan'] !== null && $data['plan'] !== '') ? (int)$data['plan'] : 12,
             ':monthly'              => $data['monthly'] ?? null,
             ':initial_payment'      => $data['initial_payment'] ?? null,
             ':initial_payment_date' => $data['initial_payment_date'] ?? null,
             ':residual'             => $data['residual'] ?? null,
             ':approval_amount'      => $data['approval_amount'] ?? null,
-            ':receiving'            => !empty($data['receiving']) ? $data['receiving'] : null,
+            ':receiving'            => !empty($data['receiving']) ? $data['receiving'] : 'Pending',
         ]);
 
         return $stmt !== null;

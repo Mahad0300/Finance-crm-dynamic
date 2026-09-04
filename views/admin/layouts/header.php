@@ -98,6 +98,13 @@ $displayRoleTitle = $roleTitles[$role] ?? 'User';
                             <span>Reports</span>
                         </a>
                     <?php endif; ?>
+
+                    <?php if ($role === 'admin'): ?>
+                        <a href="<?= url('commission') ?>" class="top-nav-item <?= ($activeNav ?? '') === 'commission' ? 'active' : '' ?>" id="navCommission">
+                            <i class="fa-solid fa-hand-holding-dollar"></i>
+                            <span>Commission</span>
+                        </a>
+                    <?php endif; ?>
                 </nav>
 
                 <div class="nav-right">

@@ -388,7 +388,7 @@ function switchWeeklyCycle(startDate) {
                         inputTotalReceived.value = savedVal;
                     } else {
                         const checkedSum = (data.records || [])
-                            .filter(r => r.receiving === 'Received' || Number(r.is_received) === 1)
+                            .filter(r => Number(r.is_received) === 1)
                             .reduce((sum, r) => sum + (parseFloat(r.approval_payment || r.residual_payment) || 0), 0);
                         inputTotalReceived.value = checkedSum > 0 ? checkedSum : '';
                     }
@@ -649,7 +649,7 @@ function initReportsPage() {
             inputTotalReceived.value = savedVal;
         } else {
             const checkedSum = (window.APP_CONFIG.databaseReports || [])
-                .filter(r => r.receiving === 'Received' || Number(r.is_received) === 1)
+                .filter(r => Number(r.is_received) === 1)
                 .reduce((sum, r) => sum + (parseFloat(r.approval_payment || r.residual_payment) || 0), 0);
             inputTotalReceived.value = checkedSum > 0 ? checkedSum : '';
         }

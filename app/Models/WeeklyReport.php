@@ -154,7 +154,10 @@ class WeeklyReport extends Model {
                         c.plan,
                         CASE WHEN r.payment_type = 'Approval Payment' THEN c.approval_amount ELSE NULL END as approval_payment,
                         CASE WHEN r.payment_type = 'Residual Payment' THEN c.residual ELSE NULL END as residual_payment,
-                        c.receiving
+                        CASE 
+                            WHEN r.is_received = 1 THEN 'Received' 
+                            ELSE 'Pending' 
+                        END as receiving
                     FROM `weekly_report_records` r
                     INNER JOIN `clients` c ON c.id = r.client_id
                     WHERE r.report_id = :report_id

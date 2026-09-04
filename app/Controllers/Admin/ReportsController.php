@@ -50,7 +50,11 @@ class ReportsController extends Controller
         $closers = $agentModel->getAgentsByRole('closer');
         $connectors = $agentModel->getConnectors();
 
-        $this->view('admin/reports', [
+        $user = $this->getCurrentUser();
+        $role = $user['role'] ?? 'admin';
+        $viewPath = ($role === 'report_user') ? 'report_user/reports' : 'admin/reports';
+
+        $this->view($viewPath, [
             'pageTitle'              => 'Weekly Reports & Balance - Finance Portal',
             'activeNav'              => 'reports',
             'clients'                => $clients,
@@ -64,7 +68,7 @@ class ReportsController extends Controller
             'superAgents'            => $superAgents,
             'closers'                => $closers,
             'connectors'             => $connectors,
-            'currentUser'            => $this->getCurrentUser()
+            'currentUser'            => $user
         ]);
     }
 

@@ -74,10 +74,8 @@
     <!-- Toast Notifications Container -->
     <div class="toast-container" id="toastContainer" aria-live="polite" aria-atomic="true"></div>
 
-    <!-- Core Scripts -->
-    <script src="<?= asset('js/admin/common.js') ?>"></script>
-    <?php if (!empty($pageScript)): ?>
-        <script src="<?= asset('js/admin/' . $pageScript) ?>"></script>
-    <?php endif; ?>
+    <!-- Core Scripts (Client User specific) -->
+    <script src="<?= asset('js/client_user/common.js') ?>"></script>
+    <script src="<?= asset('js/client_user/clients.js') ?>"></script>
 </body>
 </html>

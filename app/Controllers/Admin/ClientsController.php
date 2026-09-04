@@ -18,7 +18,11 @@ class ClientsController extends Controller
         $closers = $agentModel->getAgentsByRole('closer');
         $connectors = $agentModel->getConnectors();
 
-        $this->view('admin/clients', [
+        $user = $this->getCurrentUser();
+        $role = $user['role'] ?? 'admin';
+        $viewPath = ($role === 'client_user') ? 'client_user/clients' : 'admin/clients';
+
+        $this->view($viewPath, [
             'pageTitle'   => 'Client Data Management - Finance Portal',
             'activeNav'   => 'clients',
             'clients'     => $clients,
@@ -26,7 +30,7 @@ class ClientsController extends Controller
             'superAgents' => $superAgents,
             'closers'     => $closers,
             'connectors'  => $connectors,
-            'currentUser' => $this->getCurrentUser()
+            'currentUser' => $user
         ]);
     }
 

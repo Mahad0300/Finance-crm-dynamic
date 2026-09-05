@@ -5,10 +5,33 @@ use App\Core\Model;
 
 class Client extends Model {
 
+    private static bool $indexesChecked = false;
+
+    public function ensureIndexes(): void {
+        if (self::$indexesChecked) return;
+        self::$indexesChecked = true;
+        try {
+            $db = $this->getDb();
+            $stmt = $db->query("SHOW INDEX FROM `clients` WHERE Key_name = 'idx_clients_status_date'");
+            if ($stmt && empty($stmt->fetchAll())) {
+                $db->exec("ALTER TABLE `clients` ADD INDEX `idx_clients_status_date` (`status`, `initial_payment_date`)");
+            }
+        } catch (\Throwable $e) {
+            // Already exists or permission denied
+        }
+    }
+
     public function getAll(array $filters = []): array {
         if (!$this->isConnected()) return [];
+        $this->ensureIndexes();
         $sql = "SELECT * FROM `clients` ORDER BY `id` DESC";
         return $this->fetchAll($sql);
+    }
+
+    public function getCount(): int {
+        if (!$this->isConnected()) return 0;
+        $row = $this->fetchOne("SELECT COUNT(*) as `cnt` FROM `clients`");
+        return (int)($row['cnt'] ?? 0);
     }
 
     public function getById(int $id): ?array {

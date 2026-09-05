@@ -248,16 +248,7 @@ require VIEWS_PATH . '/client_user/layouts/header.php';
                             <div class="tbl-calc-badge text-main" id="tblApprovalAmount">-</div>
                         </td>
                         <td>
-                            <div style="display: flex; align-items: center; gap: 6px;">
-                                <select class="tbl-select" id="tblReceiving" style="flex: 1;">
-                                    <option value="">-- Receiving --</option>
-                                    <option value="Pending">Pending</option>
-                                    <option value="Received">Received</option>
-                                </select>
-                                <button type="button" class="btn-inline-save" id="btnSaveInlineClient" title="Save Client (or press Enter)">
-                                    <i class="fa-solid fa-check"></i>
-                                </button>
-                            </div>
+                            <span class="status-pill pill-pending">Pending</span>
                         </td>
                     </tr>
                 </thead>

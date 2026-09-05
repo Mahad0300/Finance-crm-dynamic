@@ -67,14 +67,14 @@ $router->get('/clients', 'Admin\\ClientsController@index', [ClientAuthMiddleware
 $router->get('/reports', 'Admin\\ReportsController@index', [ReportAuthMiddleware::class]);
 $router->get('/commission', 'Admin\\CommissionController@index', [CommissionAuthMiddleware::class]);
 
-// 3. API Endpoints (Admin)
-$router->post('/api/clients/create', 'Admin\\ClientsController@create', [AuthMiddleware::class]);
-$router->post('/api/clients/update', 'Admin\\ClientsController@update', [AuthMiddleware::class]);
-$router->post('/api/clients/delete', 'Admin\\ClientsController@delete', [AuthMiddleware::class]);
-$router->post('/api/reports/toggle', 'Admin\\ReportsController@toggleCheckbox', [AuthMiddleware::class]);
-$router->post('/api/reports/footer', 'Admin\\ReportsController@saveFooter', [AuthMiddleware::class]);
-$router->post('/api/reports/switch-week', 'Admin\\ReportsController@switchWeek', [AuthMiddleware::class]);
-$router->post('/api/reports/client-ledger', 'Admin\\ReportsController@getClientLedger', [AuthMiddleware::class]);
+// 3. API Endpoints (Secured with Role Auth & CSRF Protection)
+$router->post('/api/clients/create', 'Admin\\ClientsController@create', [ClientAuthMiddleware::class, CsrfMiddleware::class]);
+$router->post('/api/clients/update', 'Admin\\ClientsController@update', [ClientAuthMiddleware::class, CsrfMiddleware::class]);
+$router->post('/api/clients/delete', 'Admin\\ClientsController@delete', [AdminAuthMiddleware::class, CsrfMiddleware::class]);
+$router->post('/api/reports/toggle', 'Admin\\ReportsController@toggleCheckbox', [AuthMiddleware::class, CsrfMiddleware::class]);
+$router->post('/api/reports/footer', 'Admin\\ReportsController@saveFooter', [ReportAuthMiddleware::class, CsrfMiddleware::class]);
+$router->post('/api/reports/switch-week', 'Admin\\ReportsController@switchWeek', [ReportAuthMiddleware::class, CsrfMiddleware::class]);
+$router->post('/api/reports/client-ledger', 'Admin\\ReportsController@getClientLedger', [AuthMiddleware::class, CsrfMiddleware::class]);
 
 // 4. Dispatch Request
 $url = isset($_GET['url']) ? rtrim((string)$_GET['url'], '/') : '';

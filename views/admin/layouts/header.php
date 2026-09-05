@@ -42,6 +42,7 @@ $displayRoleTitle = $roleTitles[$role] ?? 'User';
     <script>
         window.APP_CONFIG = {
             baseUrl: '<?= url() ?>',
+            csrfToken: '<?= \App\Core\Session::csrfToken() ?>',
             currentUser: <?= json_encode($currentUser ?? null) ?>,
             databaseClients: <?= !empty($clients) ? json_encode($clients) : '[]' ?>,
             databaseReports: <?= !empty($records) ? json_encode($records) : '[]' ?>,
@@ -56,7 +57,8 @@ $displayRoleTitle = $roleTitles[$role] ?? 'User';
                 smart: <?= (!empty($smartAgents) && is_array($smartAgents)) ? json_encode(array_column($smartAgents, 'name')) : '[]' ?>,
                 super: <?= (!empty($superAgents) && is_array($superAgents)) ? json_encode(array_column($superAgents, 'name')) : '[]' ?>,
                 closer: <?= (!empty($closers) && is_array($closers)) ? json_encode(array_column($closers, 'name')) : '[]' ?>
-            }
+            },
+            databaseConnectors: <?= (!empty($connectors) && is_array($connectors)) ? json_encode(array_values(array_filter(array_map(function($c) { return is_array($c) ? ($c['name'] ?? '') : (string)$c; }, $connectors)))) : '[]' ?>
         };
     </script>
 </head>
@@ -88,7 +90,8 @@ $displayRoleTitle = $roleTitles[$role] ?? 'User';
                         <a href="<?= url('clients') ?>" class="top-nav-item <?= ($activeNav ?? '') === 'clients' ? 'active' : '' ?>" id="navClients">
                             <i class="fa-solid fa-users"></i>
                             <span>Client Data</span>
-                            <span class="badge-count" id="navClientCount" style="<?= (!empty($clients) && count($clients) > 0) ? 'display: inline-flex;' : '' ?>"><?= !empty($clients) ? count($clients) : '0' ?></span>
+                            <?php $clientBadgeCount = $clientCount ?? (!empty($clients) ? count($clients) : 0); ?>
+                            <span class="badge-count" id="navClientCount" style="<?= ($clientBadgeCount > 0) ? 'display: inline-flex;' : '' ?>"><?= $clientBadgeCount ?></span>
                         </a>
                     <?php endif; ?>
 

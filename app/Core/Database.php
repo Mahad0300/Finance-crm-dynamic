@@ -47,10 +47,11 @@ class Database
             );
             self::$connection->exec("SET time_zone = '{$tz}'");
         } catch (PDOException $e) {
+            error_log(sprintf('DB Connection Error: %s [Host: %s, Port: %s, DB: %s]', $e->getMessage(), $host, $port, $name));
             if (defined('APP_DEBUG') && APP_DEBUG) {
-                throw new \RuntimeException('Database connection failed: ' . $e->getMessage() . ' (Host: ' . $host . ', Port: ' . $port . ', User: ' . $user . ', Database: ' . $name . ')', 0, $e);
+                throw new \RuntimeException('Database connection failed: ' . $e->getMessage(), 0, $e);
             }
-            throw new \RuntimeException('Database connection failed. Check server configuration.', 0, $e);
+            throw new \RuntimeException('Database connection failed. Please contact administrator.', 0, $e);
         }
 
         return self::$connection;

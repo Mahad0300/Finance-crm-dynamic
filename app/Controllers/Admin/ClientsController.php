@@ -70,9 +70,14 @@ class ClientsController extends Controller
             'initial_payment_date' => $initialPaymentDate,
             'residual'             => $residual,
             'approval_amount'      => $approvalAmount,
-            'receiving'            => (!empty($_POST['receiving']) && $_POST['receiving'] !== 'null') ? $_POST['receiving'] : null,
+            'receiving'            => 'Pending',
             'created_by'           => $user['id'] ?? null
         ];
+
+        // Validation: Client Name required
+        if (empty($data['client_name'])) {
+            $this->jsonResponse(['success' => false, 'error' => 'Client name is required.'], 422);
+        }
 
         // Validation: Only enforce $250 minimum if an initial payment is actually entered and > 0
         if ($data['initial_payment'] !== null && $data['initial_payment'] > 0 && $data['initial_payment'] < 250) {
@@ -93,6 +98,12 @@ class ClientsController extends Controller
         }
 
         $clientModel = new Client();
+        $existingClient = $clientModel->getById($id);
+        if (!$existingClient) {
+            $this->jsonResponse(['success' => false, 'error' => 'Client not found'], 404);
+            return;
+        }
+
         $parseNum = function($val) {
             if ($val === null || $val === '' || $val === 'null' || $val === 'undefined') return null;
             return (float)$val;
@@ -111,7 +122,7 @@ class ClientsController extends Controller
         $plan = ($rawPlan !== null && $rawPlan !== '' && $rawPlan !== 'null' && $rawPlan !== 'undefined') ? (int)$rawPlan : null;
 
         $data = [
-            'date'                 => (!empty($_POST['date']) && $_POST['date'] !== 'null') ? $_POST['date'] : date('Y-m-d'),
+            'date'                 => (!empty($_POST['date']) && $_POST['date'] !== 'null') ? $_POST['date'] : ($existingClient['date'] ?? date('Y-m-d')),
             'client_name'          => trim($_POST['clientName'] ?? $_POST['client_name'] ?? ''),
             'connector_name'       => trim($_POST['connector'] ?? $_POST['connector_name'] ?? ''),
             'smart_agent_name'     => trim($_POST['smartAgent'] ?? $_POST['smart_agent_name'] ?? ''),
@@ -124,8 +135,13 @@ class ClientsController extends Controller
             'initial_payment_date' => $initialPaymentDate,
             'residual'             => $residual,
             'approval_amount'      => $approvalAmount,
-            'receiving'            => (!empty($_POST['receiving']) && $_POST['receiving'] !== 'null') ? $_POST['receiving'] : null
+            'receiving'            => $existingClient['receiving'] ?? 'Pending'
         ];
+
+        // Validation: Client Name required
+        if (empty($data['client_name'])) {
+            $this->jsonResponse(['success' => false, 'error' => 'Client name cannot be empty.'], 422);
+        }
 
         // Validation: Only enforce $250 minimum if an initial payment is actually entered and > 0
         if ($data['initial_payment'] !== null && $data['initial_payment'] > 0 && $data['initial_payment'] < 250) {
@@ -139,6 +155,11 @@ class ClientsController extends Controller
 
     public function delete(): void
     {
+        $user = $this->getCurrentUser();
+        if (($user['role'] ?? '') !== 'admin') {
+            $this->jsonResponse(['success' => false, 'error' => 'Unauthorized. Only administrators can delete records.'], 403);
+        }
+
         $id = (int)($_POST['id'] ?? 0);
         $clientModel = new Client();
         $deleted = $clientModel->delete($id);

@@ -512,6 +512,20 @@ function renderClientLedger(data) {
         const now = new Date();
         const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
         const isFuture = rec.date > todayStr;
+        const isCharged = (rec.is_charged !== undefined) ? rec.is_charged : (data.client.status === 'Charged');
+        const isAudited = (rec.is_audited !== undefined) ? rec.is_audited : (!rec.audit_date || rec.audit_date <= todayStr);
+        const canReceive = isCharged && isAudited && !isFuture;
+
+        let disabledReason = '';
+        if (!isCharged) {
+            disabledReason = `Cannot mark received: Client status is "${data.client.status || 'Submit'}" (must be Charged)`;
+        } else if (!isAudited) {
+            const nextAuditStr = rec.audit_formatted ? rec.audit_formatted : (rec.audit_date || 'next week');
+            disabledReason = `Cannot mark received: Audit for this weekly report opens next week on ${nextAuditStr}`;
+        } else if (isFuture) {
+            disabledReason = `Cannot mark received: Date (${formatDateDisplay(rec.date)}) is in the future`;
+        }
+
         const isApprovalRow = (appAmount > 0);
         const clientId = data.client.id;
 
@@ -522,8 +536,8 @@ function renderClientLedger(data) {
             <td class="currency-val cell-rep-initial font-bold">${approvalDisplay}</td>
             <td class="currency-val cell-rep-residual font-bold text-primary">${residualDisplay}</td>
             <td class="cell-rep-checkbox text-center">
-                <label class="crm-custom-chk ${isFuture ? 'chk-disabled' : ''}" 
-                       title="${isFuture ? 'Cannot mark as received: Date (' + formatDateDisplay(rec.date) + ') is in the future' : 'Click to toggle received status'}">
+                <label class="crm-custom-chk ${!canReceive ? 'chk-disabled' : ''}" 
+                       title="${!canReceive ? disabledReason : 'Click to toggle received status'}">
                     <input type="checkbox" 
                         class="crm-chk-native reports-ledger-receiving-checkbox" 
                         data-client-id="${clientId}"
@@ -532,7 +546,7 @@ function renderClientLedger(data) {
                         data-payment-type="${rec.payment_type || (isApprovalRow ? 'Approval Payment' : 'Residual Payment')}"
                         data-date="${rec.date}"
                         ${rec.is_received ? 'checked' : ''} 
-                        ${isFuture ? 'disabled' : ''}>
+                        ${!canReceive ? 'disabled' : ''}>
                     <span class="crm-chk-box">
                         <i class="fa-solid fa-check"></i>
                     </span>

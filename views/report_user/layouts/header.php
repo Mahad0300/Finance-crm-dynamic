@@ -37,6 +37,7 @@ $displayRoleTitle = 'Reports Manager';
     <script>
         window.APP_CONFIG = {
             baseUrl: '<?= url() ?>',
+            csrfToken: '<?= \App\Core\Session::csrfToken() ?>',
             currentUser: <?= json_encode($currentUser ?? null) ?>,
             databaseClients: <?= !empty($clients) ? json_encode($clients) : '[]' ?>,
             databaseReports: <?= !empty($records) ? json_encode($records) : '[]' ?>,
@@ -51,7 +52,8 @@ $displayRoleTitle = 'Reports Manager';
                 smart: <?= (!empty($smartAgents) && is_array($smartAgents)) ? json_encode(array_column($smartAgents, 'name')) : '[]' ?>,
                 super: <?= (!empty($superAgents) && is_array($superAgents)) ? json_encode(array_column($superAgents, 'name')) : '[]' ?>,
                 closer: <?= (!empty($closers) && is_array($closers)) ? json_encode(array_column($closers, 'name')) : '[]' ?>
-            }
+            },
+            databaseConnectors: <?= (!empty($connectors) && is_array($connectors)) ? json_encode(array_values(array_filter(array_map(function($c) { return is_array($c) ? ($c['name'] ?? '') : (string)$c; }, $connectors)))) : '[]' ?>
         };
     </script>
 </head>

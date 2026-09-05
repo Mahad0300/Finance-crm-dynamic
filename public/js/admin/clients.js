@@ -324,10 +324,7 @@ function renderClientTable() {
                         <div class="tbl-calc-badge text-main" id="editApproval_${client.id}">${formatCurrency(client.approvalAmount)}</div>
                     </td>
                     <td>
-                        <select class="tbl-select" id="editReceiving_${client.id}">
-                            <option value="Pending" ${client.receiving === 'Pending' ? 'selected' : ''}>Pending</option>
-                            <option value="Received" ${client.receiving === 'Received' ? 'selected' : ''}>Received</option>
-                        </select>
+                        ${getReceivingBadgeHtml(client.receiving || 'Pending')}
                     </td>
                 `;
                 clientsTableBody.appendChild(tr);
@@ -448,7 +445,6 @@ function saveInlineEdit(clientId) {
     const monthlyInp = document.getElementById(`editMonthly_${clientId}`);
     const initialInp = document.getElementById(`editInitial_${clientId}`);
     const initialDateInp = document.getElementById(`editInitialDate_${clientId}`);
-    const receivingInp = document.getElementById(`editReceiving_${clientId}`);
 
     const monthlyNum = (monthlyInp && monthlyInp.value !== '') ? parseFloat(monthlyInp.value) : null;
     const initialNum = (initialInp && initialInp.value !== '') ? parseFloat(initialInp.value) : null;
@@ -483,7 +479,7 @@ function saveInlineEdit(clientId) {
             initialPaymentDate: initialDateInp ? initialDateInp.value : '',
             approvalAmount: calc.approval,
             residual: calc.residual,
-            receiving: receivingInp ? receivingInp.value : ''
+            receiving: state.clients[clientIdx].receiving || 'Pending'
         };
 
         ensureAgentExists('smart', smartInp ? smartInp.value : '');
@@ -509,7 +505,7 @@ function saveInlineEdit(clientId) {
             formData.append('initialPaymentDate', state.clients[clientIdx].initialPaymentDate);
             formData.append('residual', state.clients[clientIdx].residual);
             formData.append('approvalAmount', state.clients[clientIdx].approvalAmount);
-            formData.append('receiving', state.clients[clientIdx].receiving);
+            formData.append('receiving', state.clients[clientIdx].receiving || 'Pending');
 
             fetch(`${window.APP_CONFIG.baseUrl}/api/clients/update`, {
                 method: 'POST',
@@ -767,7 +763,6 @@ function handleInlineSaveClient() {
     const tblMonthly = document.getElementById('tblMonthly');
     const tblInitialPayment = document.getElementById('tblInitialPayment');
     const tblInitialPaymentDate = document.getElementById('tblInitialPaymentDate');
-    const tblReceiving = document.getElementById('tblReceiving');
 
     const dateVal = tblDate && tblDate.value ? tblDate.value : getTodayLocalDateString();
     const connectorVal = tblConnector ? tblConnector.value.trim() : '';
@@ -792,7 +787,7 @@ function handleInlineSaveClient() {
     const initialPaymentDateVal = tblInitialPaymentDate ? tblInitialPaymentDate.value : '';
 
     const calc = initialPaymentVal !== null ? calculateApprovalAndResidual(initialPaymentVal) : { approval: null, residual: null };
-    const receivingVal = tblReceiving ? tblReceiving.value : '';
+    const receivingVal = 'Pending';
 
     const newClient = {
         id: Date.now(),
@@ -809,7 +804,7 @@ function handleInlineSaveClient() {
         initialPaymentDate: initialPaymentDateVal,
         approvalAmount: calc.approval,
         residual: calc.residual,
-        receiving: receivingVal
+        receiving: 'Pending'
     };
 
     ensureAgentExists('smart', smartAgentVal);
@@ -1054,37 +1049,56 @@ document.addEventListener('DOMContentLoaded', () => {
     if (deleteCancelBtn) deleteCancelBtn.addEventListener('click', () => closeModal(deleteModal));
     if (deleteConfirmBtn) deleteConfirmBtn.addEventListener('click', confirmDeleteClient);
 
-    // Auto-save on click-outside
+    // Helper to detect if click landed on scrollbars (browser window or table scroll container)
+    function isClickOnScrollbar(e) {
+        // 1. Browser window scrollbars
+        if (window.innerWidth > document.documentElement.clientWidth && e.clientX >= document.documentElement.clientWidth) {
+            return true;
+        }
+        if (window.innerHeight > document.documentElement.clientHeight && e.clientY >= document.documentElement.clientHeight) {
+            return true;
+        }
+
+        // 2. Table scroll container scrollbars
+        const tableScroll = document.querySelector('.table-scroll-container');
+        if (tableScroll) {
+            const rect = tableScroll.getBoundingClientRect();
+            if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
+                const hasHScroll = tableScroll.scrollWidth > tableScroll.clientWidth;
+                if (hasHScroll && e.clientY >= (rect.top + tableScroll.clientHeight)) {
+                    return true;
+                }
+                const hasVScroll = tableScroll.scrollHeight > tableScroll.clientHeight;
+                if (hasVScroll && e.clientX >= (rect.left + tableScroll.clientWidth)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    // Auto-save on click-outside (excluding scrollbar and popovers)
     document.addEventListener('mousedown', (e) => {
+        // Do not auto-save/close if clicking on any scrollbar
+        if (isClickOnScrollbar(e)) {
+            return;
+        }
+
+        // Ignore clicks inside agent popover dropdown or trigger buttons
         if (currentOpenPopover) {
             if (currentOpenPopover.element && currentOpenPopover.element.contains(e.target)) return;
             if (currentOpenPopover.triggerBtn && currentOpenPopover.triggerBtn.contains(e.target)) return;
         }
+        if (e.target.closest && (e.target.closest('.agent-popover-dropdown') || e.target.closest('.btn-agent-select-trigger'))) {
+            return;
+        }
 
+        // Ignore modals and toasts
         if (e.target.closest('.modal-container') || e.target.closest('.modal-backdrop.active') || e.target.closest('.toast-container')) {
             return;
         }
 
-        const tableScroll = document.querySelector('.table-scroll-container');
-        if (tableScroll) {
-            const rect = tableScroll.getBoundingClientRect();
-            if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= (rect.top + tableScroll.clientHeight - 8) && e.clientY <= (rect.bottom + 8)) {
-                return;
-            }
-            if (e.clientY >= rect.top && e.clientY <= rect.bottom && e.clientX >= (rect.left + tableScroll.clientWidth - 8) && e.clientX <= (rect.right + 8)) {
-                return;
-            }
-        }
-
-        if (e.target.closest('thead')) {
-            return;
-        }
-
-        // Ignore clicks inside agent popover dropdowns
-        if (e.target.closest && e.target.closest('.agent-popover-dropdown')) {
-            return;
-        }
-
+        // 1. If currently editing an existing client row (Double-click inline edit)
         if (state.editingClientId) {
             const editRow = document.getElementById(`editRow_${state.editingClientId}`);
             if (editRow && !editRow.contains(e.target)) {
@@ -1093,16 +1107,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        // 2. If currently adding a new client row (inlineAddRow)
         const inlineRow = document.getElementById('inlineAddRow');
         const btnOpenModal = document.getElementById('btnOpenAddModal');
         const btnHeaderAdd = document.querySelector('.btn-header-add');
-        const btnSaveInline = document.getElementById('btnSaveInlineClient');
 
-        if (inlineRow && inlineRow.style.display === 'table-row') {
+        if (inlineRow && (inlineRow.style.display === 'table-row' || (!inlineRow.classList.contains('d-none') && inlineRow.style.display !== 'none'))) {
             const isInsideAddRow = inlineRow.contains(e.target);
             const isAddButton = (btnOpenModal && btnOpenModal.contains(e.target)) ||
-                                (btnHeaderAdd && btnHeaderAdd.contains(e.target)) ||
-                                (btnSaveInline && btnSaveInline.contains(e.target));
+                                (btnHeaderAdd && btnHeaderAdd.contains(e.target));
 
             if (!isInsideAddRow && !isAddButton) {
                 const clientNameInput = document.getElementById('tblClientName');
@@ -1116,16 +1129,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
-
-    // Inline Save Button Click
-    const btnSaveInline = document.getElementById('btnSaveInlineClient');
-    if (btnSaveInline) {
-        btnSaveInline.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            handleInlineSaveClient();
-        });
-    }
 
     // Exit Client Ledger Button Handler
     const btnExit = document.getElementById('btnExitLedger');
@@ -1202,8 +1205,25 @@ function renderClientLedgerOnClientsPage(data) {
             ? formatCurrency(resAmount) 
             : `<span class="text-muted-dash">-</span>`;
 
-        // Future date constraint: Only past or current date (<= todayStr) can be checked!
+        // Checkbox availability rules:
+        // 1. Client must be Charged (not Submit or Kick Back)
+        // 2. Week's Tuesday audit day must have arrived (not ongoing/future week)
+        // 3. Payment date cannot be in the future
         const isFuture = rec.date > todayStr;
+        const isCharged = (rec.is_charged !== undefined) ? rec.is_charged : (data.client.status === 'Charged');
+        const isAudited = (rec.is_audited !== undefined) ? rec.is_audited : (!rec.audit_date || rec.audit_date <= todayStr);
+        const canReceive = isCharged && isAudited && !isFuture;
+
+        let disabledReason = '';
+        if (!isCharged) {
+            disabledReason = `Cannot mark received: Client status is "${data.client.status || 'Submit'}" (must be Charged)`;
+        } else if (!isAudited) {
+            const nextAuditStr = rec.audit_formatted ? rec.audit_formatted : (rec.audit_date || 'next week');
+            disabledReason = `Cannot mark received: Audit for this weekly report opens next week on ${nextAuditStr}`;
+        } else if (isFuture) {
+            disabledReason = `Cannot mark received: Date (${formatDateDisplay(rec.date)}) is in the future`;
+        }
+
         const isApprovalRow = (appAmount > 0);
         const clientId = data.client.id;
 
@@ -1214,8 +1234,8 @@ function renderClientLedgerOnClientsPage(data) {
             <td class="currency-val cell-rep-initial font-bold">${approvalDisplay}</td>
             <td class="currency-val cell-rep-residual font-bold text-primary">${residualDisplay}</td>
             <td class="cell-rep-checkbox text-center">
-                <label class="crm-custom-chk ${isFuture ? 'chk-disabled' : ''}" 
-                       title="${isFuture ? 'Cannot mark as received: Date (' + formatDateDisplay(rec.date) + ') is in the future' : 'Click to toggle received status'}">
+                <label class="crm-custom-chk ${!canReceive ? 'chk-disabled' : ''}" 
+                       title="${!canReceive ? disabledReason : 'Click to toggle received status'}">
                     <input type="checkbox" 
                         class="crm-chk-native ledger-receiving-checkbox" 
                         data-client-id="${clientId}"
@@ -1224,7 +1244,7 @@ function renderClientLedgerOnClientsPage(data) {
                         data-payment-type="${rec.payment_type || (isApprovalRow ? 'Approval Payment' : 'Residual Payment')}"
                         data-date="${rec.date}"
                         ${rec.is_received ? 'checked' : ''} 
-                        ${isFuture ? 'disabled' : ''}>
+                        ${!canReceive ? 'disabled' : ''}>
                     <span class="crm-chk-box">
                         <i class="fa-solid fa-check"></i>
                     </span>

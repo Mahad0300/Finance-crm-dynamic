@@ -15,7 +15,7 @@ class CommissionController extends Controller
         $clientModel = new Client();
         $agentModel = new Agent();
 
-        $clients = $clientModel->getAll();
+        $clientCount = $clientModel->getCount();
         $smartAgents = $agentModel->getAgentsByRole('smart');
         $superAgents = $agentModel->getAgentsByRole('super');
         $closers = $agentModel->getAgentsByRole('closer');
@@ -27,7 +27,8 @@ class CommissionController extends Controller
             'pageTitle'   => 'Commission - Finance Portal',
             'activeNav'   => 'commission',
             'pageScript'  => 'commission.js',
-            'clients'     => $clients,
+            'clients'     => [],
+            'clientCount' => $clientCount,
             'smartAgents' => $smartAgents,
             'superAgents' => $superAgents,
             'closers'     => $closers,

@@ -64,16 +64,16 @@ function getFilteredDashboardClients() {
 
         return state.clients.filter(c => {
             const submitDate = c.date;
-            const chargeDate = c.initialPaymentDate || c.initial_payment_date || c.date;
-            const inWeekBySubmit = submitDate && submitDate >= sw.start_date && submitDate <= sw.end_date;
-            const inWeekByCharge = chargeDate && chargeDate >= sw.start_date && chargeDate <= sw.end_date;
-            return inWeekBySubmit || inWeekByCharge;
+            return submitDate && submitDate >= sw.start_date && submitDate <= sw.end_date;
         });
     }
 
     if (dashboardDateFilter.mode === 'single-month') {
         const targetMonth = dashboardDateFilter.singleMonth || getDefaultDashboardMonth();
-        return state.clients.filter(c => c.date && c.date.startsWith(targetMonth));
+        return state.clients.filter(c => {
+            const submitMonth = c.date ? c.date.substring(0, 7) : '';
+            return submitMonth === targetMonth;
+        });
     }
 
     if (dashboardDateFilter.mode === 'month-range') {
@@ -82,8 +82,8 @@ function getFilteredDashboardClients() {
         if (!from && !to) return state.clients;
 
         return state.clients.filter(c => {
-            const submitDate = c.date ? c.date.substring(0, 7) : '';
-            return submitDate && (!from || submitDate >= from) && (!to || submitDate <= to);
+            const submitMonth = c.date ? c.date.substring(0, 7) : '';
+            return submitMonth && (!from || submitMonth >= from) && (!to || submitMonth <= to);
         });
     }
 
@@ -154,72 +154,21 @@ function renderDashboard() {
     let perfClients = clients;
 
     if (dashboardDateFilter.mode === 'current-report') {
-        const sw = dashboardDateFilter.selectedWeek || (window.APP_CONFIG?.availableWeeks ? window.APP_CONFIG.availableWeeks[0] : null);
-        const wSummary = sw && summaries[sw.start_date] ? summaries[sw.start_date] : null;
-
-        if (wSummary) {
-            totalApproval = parseFloat(wSummary.approval) || 0;
-            totalResidual = parseFloat(wSummary.residual) || 0;
-            totalReceiving = parseFloat(wSummary.total_receiving) || 0;
-            totalReceived = parseFloat(wSummary.total_received) || 0;
-            totalRemaining = parseFloat(wSummary.total_remaining) || 0;
-
-            if (Array.isArray(wSummary.transactions) && wSummary.transactions.length > 0) {
-                const txClientIds = new Set(wSummary.transactions.map(t => Number(t.client_id || t.id)));
-                perfClients = state.clients.filter(c => txClientIds.has(Number(c.id)));
-            }
-        } else {
-            const targetReport = sw ? weeklyReports.find(r => r.start_date === sw.start_date) : weeklyReports[0];
-            if (targetReport) {
-                totalReceiving = parseFloat(targetReport.total_receiving_target) || 0;
-                totalReceived = (targetReport.total_received_entered !== null) ? (parseFloat(targetReport.total_received_entered) || 0) : 0;
-                totalRemaining = (targetReport.total_remaining_balance !== null) ? (parseFloat(targetReport.total_remaining_balance) || 0) : Math.max(0, totalReceiving - totalReceived);
-                totalApproval = Math.max(0, totalReceiving - totalResidual);
-            }
-        }
-    } else if (dashboardDateFilter.mode === 'single-month') {
-        const targetMonth = dashboardDateFilter.singleMonth || getDefaultDashboardMonth();
-        
-        // 1. Approval Amount directly from all deals charged in this month
+        // Both Total Submit and Approval Amount are strictly based on Entry Date (c.date)
         totalApproval = chargedClients.reduce((sum, c) => sum + (parseFloat(c.approvalAmount) || 0), 0);
-
-        // 2. Residuals & Received totals from this month's weekly summaries
-        const monthSummaries = Object.values(summaries).filter(s => {
-            if (s.cycle_month) return s.cycle_month === targetMonth;
-            return s.start_date && s.start_date.startsWith(targetMonth);
-        });
-
-        if (monthSummaries.length > 0) {
-            totalApproval = monthSummaries.reduce((sum, s) => sum + (parseFloat(s.approval) || 0), 0);
-            totalResidual = monthSummaries.reduce((sum, s) => sum + (parseFloat(s.residual) || 0), 0);
-            totalReceived = monthSummaries.reduce((sum, s) => sum + (parseFloat(s.total_received) || 0), 0);
-        } else {
-            totalApproval = chargedClients.reduce((sum, c) => sum + (parseFloat(c.approvalAmount) || 0), 0);
-            totalResidual = chargedClients.reduce((sum, c) => sum + (parseFloat(c.residual) || 0), 0);
-            totalReceived = 0;
-        }
+        totalResidual = chargedClients.reduce((sum, c) => sum + (parseFloat(c.residual) || 0), 0);
+        totalReceived = chargedClients
+            .filter(c => c.receiving === 'Received')
+            .reduce((sum, c) => sum + (parseFloat(c.approvalAmount) || 0), 0);
         totalReceiving = totalApproval + totalResidual;
         totalRemaining = Math.max(0, totalReceiving - totalReceived);
-    } else if (dashboardDateFilter.mode === 'month-range') {
-        const from = dashboardDateFilter.startMonth;
-        const to = dashboardDateFilter.endMonth;
-        
+    } else if (dashboardDateFilter.mode === 'single-month' || dashboardDateFilter.mode === 'month-range') {
+        // Both Total Submit and Approval Amount are strictly based on Entry Date (c.date)
         totalApproval = chargedClients.reduce((sum, c) => sum + (parseFloat(c.approvalAmount) || 0), 0);
-
-        const rangeSummaries = Object.values(summaries).filter(s => {
-            const m = s.cycle_month || (s.start_date ? s.start_date.substring(0, 7) : '');
-            if (from && m < from) return false;
-            if (to && m > to) return false;
-            return true;
-        });
-
-        if (rangeSummaries.length > 0) {
-            totalResidual = rangeSummaries.reduce((sum, s) => sum + (parseFloat(s.residual) || 0), 0);
-            totalReceived = rangeSummaries.reduce((sum, s) => sum + (parseFloat(s.total_received) || 0), 0);
-        } else {
-            totalResidual = chargedClients.reduce((sum, c) => sum + (parseFloat(c.residual) || 0), 0);
-            totalReceived = 0;
-        }
+        totalResidual = chargedClients.reduce((sum, c) => sum + (parseFloat(c.residual) || 0), 0);
+        totalReceived = chargedClients
+            .filter(c => c.receiving === 'Received')
+            .reduce((sum, c) => sum + (parseFloat(c.approvalAmount) || 0), 0);
         totalReceiving = totalApproval + totalResidual;
         totalRemaining = Math.max(0, totalReceiving - totalReceived);
     }
@@ -288,30 +237,40 @@ function renderPerformanceLeaderboards(clientsList) {
 
     if (!elConnectorList && !elSmartAgentList && !elSuperAgentList && !elCloserList) return;
 
-    // 1. Connectors (Top 5 Ranked by Lead Count)
+    // 1. Connectors (Top 5 Ranked by Charged Lead Count)
     if (elConnectorList) {
         const connectorMap = {};
+
+        // Include default connectors from database so active connectors appear even if they have 0 leads in the period
+        const defaultConnectors = state.connectors || [];
+        if (Array.isArray(defaultConnectors)) {
+            defaultConnectors.forEach(name => {
+                if (name && name.trim()) {
+                    connectorMap[name.trim()] = { name: name.trim(), chargedLeads: 0, totalLeads: 0 };
+                }
+            });
+        }
+
         clients.forEach(c => {
             const name = (c.connector || '').trim();
             if (!name || name === '-') return;
             if (!connectorMap[name]) {
-                connectorMap[name] = { name, leads: 0 };
+                connectorMap[name] = { name, chargedLeads: 0, totalLeads: 0 };
             }
-            connectorMap[name].leads++;
+            connectorMap[name].totalLeads++;
+            if (c.status === 'Charged') {
+                connectorMap[name].chargedLeads++;
+            }
         });
 
-        // Ensure realistic mixed lead counts for display if counts are flat
         const connectorList = Object.values(connectorMap);
-        const allOnes = connectorList.length > 0 && connectorList.every(c => c.leads <= 1);
-        if (allOnes) {
-            const realisticCounts = [7, 5, 4, 2, 2];
-            connectorList.forEach((c, idx) => {
-                c.leads = realisticCounts[idx] !== undefined ? realisticCounts[idx] : 1;
-            });
-        }
 
         const topConnectors = connectorList
-            .sort((a, b) => b.leads - a.leads)
+            .sort((a, b) => {
+                if (b.chargedLeads !== a.chargedLeads) return b.chargedLeads - a.chargedLeads;
+                if (b.totalLeads !== a.totalLeads) return b.totalLeads - a.totalLeads;
+                return a.name.localeCompare(b.name);
+            })
             .slice(0, 5);
 
         if (topConnectors.length === 0) {
@@ -324,10 +283,11 @@ function renderPerformanceLeaderboards(clientsList) {
                         <div class="perf-avatar-initials">${getInitials(m.name)}</div>
                         <div class="perf-member-info">
                             <span class="perf-member-name" title="${escapeHtml(m.name)}">${escapeHtml(m.name)}</span>
+                            <span class="perf-sub-count">${m.chargedLeads} Charged</span>
                         </div>
                     </div>
                     <div class="perf-member-right">
-                        <span class="perf-lead-badge">${m.leads}</span>
+                        <span class="perf-lead-badge">${m.chargedLeads}</span>
                     </div>
                 </div>
             `).join('');

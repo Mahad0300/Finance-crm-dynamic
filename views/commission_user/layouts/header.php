@@ -37,6 +37,7 @@ $displayRoleTitle = 'Commission Officer';
     <script>
         window.APP_CONFIG = {
             baseUrl: '<?= url() ?>',
+            csrfToken: '<?= \App\Core\Session::csrfToken() ?>',
             currentUser: <?= json_encode($currentUser ?? null) ?>
         };
     </script>

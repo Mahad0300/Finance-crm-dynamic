@@ -14,7 +14,7 @@ class ReportsController extends Controller
         $agentModel = new Agent();
         $clientModel = new Client();
 
-        $clients = $clientModel->getAll();
+        $clientCount = $clientModel->getCount();
         $availableWeeks = $reportModel->getAvailableWeeks();
         
         // Active week requested or latest available
@@ -43,7 +43,7 @@ class ReportsController extends Controller
         $records = $reportModel->getClientsByWeek($activeWeek['start_date'], $activeWeek['end_date']);
         $activeReport = $reportModel->getOrCreateWeeklyReport($activeWeek['start_date'], $activeWeek['end_date']);
         $previousRemainingList = $reportModel->getPreviousRemainingBreakdown($activeWeek['start_date']);
-        $previousRemaining = $reportModel->getPreviousRemainingBalance($activeWeek['start_date']);
+        $previousRemaining = $reportModel->getPreviousRemainingBalance($activeWeek['start_date'], $previousRemainingList);
 
         $smartAgents = $agentModel->getAgentsByRole('smart');
         $superAgents = $agentModel->getAgentsByRole('super');
@@ -57,7 +57,8 @@ class ReportsController extends Controller
         $this->view($viewPath, [
             'pageTitle'              => 'Weekly Reports & Balance - Finance Portal',
             'activeNav'              => 'reports',
-            'clients'                => $clients,
+            'clients'                => [],
+            'clientCount'            => $clientCount,
             'availableWeeks'         => $availableWeeks,
             'activeWeek'             => $activeWeek,
             'activeReport'           => $activeReport,
@@ -81,7 +82,7 @@ class ReportsController extends Controller
         $records = $reportModel->getClientsByWeek($meta['start_date'], $meta['end_date']);
         $reportSummary = $reportModel->getOrCreateWeeklyReport($meta['start_date'], $meta['end_date']);
         $previousRemainingList = $reportModel->getPreviousRemainingBreakdown($meta['start_date']);
-        $previousRemaining = $reportModel->getPreviousRemainingBalance($meta['start_date']);
+        $previousRemaining = $reportModel->getPreviousRemainingBalance($meta['start_date'], $previousRemainingList);
 
         $this->jsonResponse([
             'success'                 => true,
@@ -112,6 +113,12 @@ class ReportsController extends Controller
 
     public function saveFooter(): void
     {
+        $user = $this->getCurrentUser();
+        $role = $user['role'] ?? '';
+        if ($role !== 'admin' && $role !== 'report_user') {
+            $this->jsonResponse(['success' => false, 'error' => 'Unauthorized. Only report managers can edit footers.'], 403);
+        }
+
         $reportId = (int)($_POST['report_id'] ?? 0);
         $totalTarget = isset($_POST['total_target']) ? (float)$_POST['total_target'] : null;
         $totalReceived = isset($_POST['total_received']) ? (float)$_POST['total_received'] : null;

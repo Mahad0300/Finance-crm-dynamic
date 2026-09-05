@@ -87,6 +87,19 @@ class ErrorHandler
             ob_end_clean();
         }
 
+        $uri = $_SERVER['REQUEST_URI'] ?? '';
+        $accept = $_SERVER['HTTP_ACCEPT'] ?? '';
+        $xrw = $_SERVER['HTTP_X_REQUESTED_WITH'] ?? '';
+        if (str_contains($uri, '/api/') || str_contains($accept, 'application/json') || strtolower($xrw) === 'xmlhttprequest') {
+            header('Content-Type: application/json; charset=utf-8');
+            $debug = defined('APP_DEBUG') && APP_DEBUG;
+            echo json_encode([
+                'success' => false,
+                'error'   => $debug ? $message : 'An internal server error occurred.'
+            ]);
+            exit;
+        }
+
         $viewDir = defined('VIEW_DIR') ? VIEW_DIR : dirname(__DIR__, 2) . '/views';
         $codeTemplate = $viewDir . '/errors/' . $code . '.php';
         $fallbackTemplate = ($code >= 500 || $code === 0)

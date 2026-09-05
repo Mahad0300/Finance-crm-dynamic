@@ -4,6 +4,26 @@
  * popover systems (Agents & Filters), badges, modals, and toasts.
  */
 
+// Global CSRF Header Interceptor for all fetch API requests
+(function() {
+    const originalFetch = window.fetch;
+    window.fetch = function(input, init) {
+        init = init || {};
+        init.headers = init.headers || {};
+        const csrf = window.APP_CONFIG && window.APP_CONFIG.csrfToken;
+        if (csrf) {
+            if (typeof Headers !== 'undefined' && init.headers instanceof Headers) {
+                if (!init.headers.has('X-CSRF-TOKEN')) init.headers.set('X-CSRF-TOKEN', csrf);
+            } else if (Array.isArray(init.headers)) {
+                init.headers.push(['X-CSRF-TOKEN', csrf]);
+            } else {
+                init.headers['X-CSRF-TOKEN'] = csrf;
+            }
+        }
+        return originalFetch.call(this, input, init);
+    };
+})();
+
 // ============================================================================
 // 1. CONFIGURATION & CONSTANTS
 // ============================================================================
@@ -37,6 +57,7 @@ const sampleClients = [];
 
 const state = {
     clients: [],
+    connectors: [],
     smartAgents: [],
     superAgents: [],
     closers: [],
@@ -115,6 +136,13 @@ function initStorage() {
         state.smartAgents = getStoredList(STORAGE_KEYS.SMART_AGENTS, []);
         state.superAgents = getStoredList(STORAGE_KEYS.SUPER_AGENTS, []);
         state.closers = getStoredList(STORAGE_KEYS.CLOSERS, []);
+    }
+
+    // 3. Connectors Live Sync from Database
+    if (window.APP_CONFIG && Array.isArray(window.APP_CONFIG.databaseConnectors) && window.APP_CONFIG.databaseConnectors.length > 0) {
+        state.connectors = window.APP_CONFIG.databaseConnectors;
+    } else {
+        state.connectors = [];
     }
 }
 

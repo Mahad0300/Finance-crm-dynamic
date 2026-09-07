@@ -70,7 +70,7 @@ function getCycleMonthForDate(dateStr) {
 
 function getFilteredDashboardClients() {
     if (!state.clients || !Array.isArray(state.clients)) return [];
-    
+
     if (dashboardDateFilter.mode === 'current-report') {
         const sw = dashboardDateFilter.selectedWeek || (window.APP_CONFIG?.availableWeeks ? window.APP_CONFIG.availableWeeks[0] : null);
         if (!sw) return state.clients;
@@ -150,19 +150,24 @@ function renderDashboard() {
     const totalSubmitAmount = submittedClients.reduce((sum, c) => sum + (parseFloat(c.approvalAmount) || parseFloat(c.initialPayment) || 0), 0);
     const submitCount = submittedClients.length;
 
-    // 2. Approved/Charged Clients
-    const chargedClients = clients.filter(c => c.status === 'Approval' || c.status === 'Charged');
+    // 2. Charged Clients (Strictly Charged status only)
+    const chargedClients = clients.filter(c => c.status === 'Charged');
 
-    // 3. Approval Amount, Residual, Total Receiving, Total Received, Total Remaining
-    let totalApproval = 0;
+    // 3. Approval Amount (Card 2) - Strictly Charged clients only
+    const totalApproval = chargedClients.reduce((sum, c) => sum + (parseFloat(c.approvalAmount) || 0), 0);
+    const chargedApprovalReceived = chargedClients
+        .filter(c => c.receiving === 'Received')
+        .reduce((sum, c) => sum + (parseFloat(c.approvalAmount) || 0), 0);
+
+    // 4. Residuals & Receiving Calculations (Card 2 Tag & Card 3 Breakdown: Charged Approval + Scheduled Residuals)
     let totalResidual = 0;
     let totalReceiving = 0;
     let totalReceived = 0;
     let totalRemaining = 0;
 
     const summaries = window.APP_CONFIG?.dashboardWeeklySummaries || {};
-    const weeklyReports = (window.APP_CONFIG && Array.isArray(window.APP_CONFIG.weeklyReports)) 
-        ? window.APP_CONFIG.weeklyReports 
+    const weeklyReports = (window.APP_CONFIG && Array.isArray(window.APP_CONFIG.weeklyReports))
+        ? window.APP_CONFIG.weeklyReports
         : [];
 
     let perfClients = clients;
@@ -172,18 +177,27 @@ function renderDashboard() {
         const weekSum = (sw && summaries[sw.start_date]) ? summaries[sw.start_date] : null;
 
         if (weekSum) {
-            totalApproval = parseFloat(weekSum.approval) || 0;
-            totalResidual = parseFloat(weekSum.residual) || 0;
-            totalReceiving = parseFloat(weekSum.total_receiving) || (totalApproval + totalResidual);
-            totalReceived = parseFloat(weekSum.total_received) || 0;
-            totalRemaining = parseFloat(weekSum.total_remaining) || Math.max(0, totalReceiving - totalReceived);
+            const txs = weekSum.transactions || [];
+            
+            // Charged upfront deals in this week
+            const weekChargedDeals = txs.filter(t => t.payment_type === 'Approval Payment' && (t.is_received || t.receiving === 'Received'));
+            const weekChargedApproval = weekChargedDeals.reduce((sum, t) => sum + (parseFloat(t.approval_payment) || 0), 0);
+
+            // Residuals in this week
+            const weekResidualTxs = txs.filter(t => t.payment_type === 'Residual Payment');
+            const weekResidualTarget = weekResidualTxs.reduce((sum, t) => sum + (parseFloat(t.residual_payment) || 0), 0);
+            const weekResidualReceived = weekResidualTxs
+                .filter(t => Number(t.is_received) === 1 || t.is_received === true)
+                .reduce((sum, t) => sum + (parseFloat(t.residual_payment) || 0), 0);
+
+            totalResidual = weekResidualTarget;
+            totalReceiving = weekChargedApproval + weekResidualTarget;
+            totalReceived = weekChargedApproval + weekResidualReceived;
+            totalRemaining = Math.max(0, totalReceiving - totalReceived);
         } else {
-            totalApproval = chargedClients.reduce((sum, c) => sum + (parseFloat(c.approvalAmount) || 0), 0);
-            totalResidual = 0;
-            totalReceived = chargedClients
-                .filter(c => c.receiving === 'Received')
-                .reduce((sum, c) => sum + (parseFloat(c.approvalAmount) || 0), 0);
-            totalReceiving = totalApproval;
+            totalResidual = chargedClients.reduce((sum, c) => sum + (parseFloat(c.residual) || 0), 0);
+            totalReceiving = totalApproval + totalResidual;
+            totalReceived = chargedApprovalReceived;
             totalRemaining = Math.max(0, totalReceiving - totalReceived);
         }
     } else if (dashboardDateFilter.mode === 'single-month' || dashboardDateFilter.mode === 'month-range') {
@@ -201,24 +215,39 @@ function renderDashboard() {
         });
 
         if (relevantSummaries.length > 0) {
-            totalApproval = relevantSummaries.reduce((sum, ws) => sum + (parseFloat(ws.approval) || 0), 0);
-            totalResidual = relevantSummaries.reduce((sum, ws) => sum + (parseFloat(ws.residual) || 0), 0);
-            totalReceiving = relevantSummaries.reduce((sum, ws) => sum + (parseFloat(ws.total_receiving) || 0), 0);
-            totalReceived = relevantSummaries.reduce((sum, ws) => sum + (parseFloat(ws.total_received) || 0), 0);
-            totalRemaining = relevantSummaries.reduce((sum, ws) => sum + (parseFloat(ws.total_remaining) || 0), 0);
+            // Aggregate scheduled residuals for the selected month/range
+            let monthResidualTarget = 0;
+            let monthResidualReceived = 0;
+
+            relevantSummaries.forEach(ws => {
+                const txs = ws.transactions || [];
+                txs.forEach(t => {
+                    if (t.payment_type === 'Residual Payment') {
+                        const rAmt = parseFloat(t.residual_payment) || 0;
+                        monthResidualTarget += rAmt;
+                        if (Number(t.is_received) === 1 || t.is_received === true) {
+                            monthResidualReceived += rAmt;
+                        }
+                    }
+                });
+            });
+
+            totalResidual = monthResidualTarget;
+            // Total Receiving = Charged Deals Approval + Scheduled Residuals
+            totalReceiving = totalApproval + monthResidualTarget;
+            // Total Received = Charged Deals Received (upfront) + Residuals Received
+            totalReceived = chargedApprovalReceived + monthResidualReceived;
+            totalRemaining = Math.max(0, totalReceiving - totalReceived);
         } else {
-            totalApproval = chargedClients.reduce((sum, c) => sum + (parseFloat(c.approvalAmount) || 0), 0);
-            totalResidual = 0;
-            totalReceived = chargedClients
-                .filter(c => c.receiving === 'Received')
-                .reduce((sum, c) => sum + (parseFloat(c.approvalAmount) || 0), 0);
+            totalResidual = chargedClients.reduce((sum, c) => sum + (parseFloat(c.residual) || 0), 0);
             totalReceiving = totalApproval + totalResidual;
+            totalReceived = chargedApprovalReceived;
             totalRemaining = Math.max(0, totalReceiving - totalReceived);
         }
     }
 
-    const receivedPercentage = totalReceiving > 0 
-        ? Math.min(100, Math.round((totalReceived / totalReceiving) * 100)) 
+    const receivedPercentage = totalReceiving > 0
+        ? Math.min(100, Math.round((totalReceived / totalReceiving) * 100))
         : 0;
 
     // Card 1: Total Submit
@@ -526,9 +555,9 @@ function setupDashboardDateFilter() {
             paneCurrentReport.classList.toggle('active', mode === 'current-report');
             // Only highlight a week if that week is currently the active selected filter
             weekItems.forEach(item => {
-                const isCurrent = dashboardDateFilter.mode === 'current-report' && 
-                                  dashboardDateFilter.selectedWeek && 
-                                  dashboardDateFilter.selectedWeek.start_date === item.getAttribute('data-start');
+                const isCurrent = dashboardDateFilter.mode === 'current-report' &&
+                    dashboardDateFilter.selectedWeek &&
+                    dashboardDateFilter.selectedWeek.start_date === item.getAttribute('data-start');
                 item.classList.toggle('selected', !!isCurrent);
             });
         }

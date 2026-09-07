@@ -42,6 +42,7 @@ require VIEWS_PATH . '/client_user/layouts/header.php';
                 <select id="filterStatus" class="filter-select-pill">
                     <option value="">All Status</option>
                     <option value="Submit">Submit</option>
+                    <option value="Approval">Approval</option>
                     <option value="Charged">Charged</option>
                     <option value="Kick Back">Kick Back</option>
                 </select>
@@ -222,12 +223,8 @@ require VIEWS_PATH . '/client_user/layouts/header.php';
                             </div>
                         </td>
                         <td>
-                            <select class="tbl-select" id="tblStatus">
-                                <option value="">-- Status --</option>
-                                <option value="Submit">Submit</option>
-                                <option value="Charged">Charged</option>
-                                <option value="Kick Back">Kick Back</option>
-                            </select>
+                            <input type="hidden" id="tblStatus" value="Submit">
+                            <span class="status-pill pill-submit" title="New client status is fixed to Submit">Submit</span>
                         </td>
                         <td>
                             <select class="tbl-select" id="tblPlan"></select>
@@ -280,55 +277,6 @@ require VIEWS_PATH . '/client_user/layouts/header.php';
             <div class="pagination-arrow-group" id="paginationControls">
                 <!-- Dynamic arrow & number buttons -->
             </div>
-        </div>
-    </div>
-
-    <!-- Client Statement Ledger View (Shown when clicking a client name) -->
-    <div class="table-outer-wrapper reports-table-wrapper" id="clientLedgerView" style="display: none;">
-        <div class="client-ledger-banner" id="clientLedgerBanner">
-            <div class="ledger-banner-content">
-                <div class="ledger-banner-left">
-                    <span class="ledger-banner-avatar"><i class="fa-solid fa-user-check"></i></span>
-                    <div class="ledger-client-name" id="ledgerClientName">Client Name</div>
-                </div>
-                <div class="ledger-banner-right">
-                    <button type="button" class="btn-exit-ledger" id="btnExitLedger" title="Return to client list">
-                        <i class="fa-solid fa-arrow-left"></i>
-                        <span>Back to Client Data</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <div class="table-scroll-container">
-            <table class="crm-data-table" id="clientStatementTable">
-                <thead>
-                    <tr>
-                        <th class="col-rep-date">
-                            <div class="th-wrap"><span>Payment Date</span></div>
-                        </th>
-                        <th class="col-rep-name">
-                            <div class="th-wrap"><span>Client Name</span></div>
-                        </th>
-                        <th class="col-rep-plan">
-                            <div class="th-wrap"><span>Plan</span></div>
-                        </th>
-                        <th class="col-rep-initial">
-                            <div class="th-wrap"><span>Approval Payment</span></div>
-                        </th>
-                        <th class="col-rep-residual">
-                            <div class="th-wrap"><span>Residual</span></div>
-                        </th>
-                        <th class="col-rep-receiving">
-                            <div class="th-wrap"><span>Receiving</span></div>
-                        </th>
-                    </tr>
-                </thead>
-                <tbody id="clientStatementTableBody">
-                    <!-- Populated dynamically via JS -->
-                </tbody>
-            </table>
-        </div>
     </div>
 </section>
 

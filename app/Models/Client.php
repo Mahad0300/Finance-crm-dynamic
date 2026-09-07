@@ -21,9 +21,40 @@ class Client extends Model {
         }
     }
 
+    public function syncDueApprovalStatuses(?string $targetDate = null): void {
+        if (!$this->isConnected()) return;
+        try {
+            $today = $targetDate ?: date('Y-m-d');
+            // Deals whose initial payment date has arrived become Approval
+            $this->query(
+                "UPDATE `clients` 
+                 SET `status` = 'Approval' 
+                 WHERE `status` = 'Submit' 
+                   AND `initial_payment_date` IS NOT NULL 
+                   AND `initial_payment_date` != '' 
+                   AND `initial_payment_date` != '0000-00-00' 
+                   AND `initial_payment_date` <= :today",
+                [':today' => $today]
+            );
+            // Deals whose initial payment date is still in the future and NOT yet received remain/revert to Submit
+            $this->query(
+                "UPDATE `clients` 
+                 SET `status` = 'Submit' 
+                 WHERE `status` = 'Approval' 
+                   AND `receiving` != 'Received'
+                   AND `initial_payment_date` IS NOT NULL 
+                   AND `initial_payment_date` > :today",
+                [':today' => $today]
+            );
+        } catch (\Throwable $e) {
+            // Silently continue
+        }
+    }
+
     public function getAll(array $filters = []): array {
         if (!$this->isConnected()) return [];
         $this->ensureIndexes();
+        $this->syncDueApprovalStatuses();
         $sql = "SELECT * FROM `clients` ORDER BY `id` DESC";
         return $this->fetchAll($sql);
     }
@@ -141,11 +172,18 @@ class Client extends Model {
             ':created_by'           => $data['created_by'] ?? null,
         ]);
 
-        return $stmt ? (int)$this->lastInsertId() : null;
+        $insertId = $stmt ? (int)$this->lastInsertId() : null;
+        if ($insertId && !empty($data['initial_payment_date'])) {
+            (new \App\Models\WeeklyReport())->syncWeeklyReportForDate($data['initial_payment_date']);
+        }
+        return $insertId;
     }
 
     public function update(int $id, array $data): bool {
         if (!$this->isConnected()) return false;
+
+        $existing = $this->getById($id);
+        if (!$existing) return false;
 
         $connectorName = !empty($data['connector_name']) ? trim($data['connector_name']) : null;
         $smartAgentName = !empty($data['smart_agent_name']) ? trim($data['smart_agent_name']) : null;
@@ -201,10 +239,21 @@ class Client extends Model {
         ]);
 
         $success = ($stmt !== null);
-        if ($success && isset($data['receiving'])) {
-            $isRec = (strtolower((string)$data['receiving']) === 'received') ? 1 : 0;
+        if ($success) {
             $reportModel = new \App\Models\WeeklyReport();
-            $reportModel->toggleClientReceived($id, $isRec);
+            if (isset($data['receiving']) && in_array($data['status'] ?? '', ['Approval', 'Charged'])) {
+                $isRec = (strtolower((string)$data['receiving']) === 'received') ? 1 : 0;
+                $existingRec = (strtolower((string)($existing['receiving'] ?? '')) === 'received') ? 1 : 0;
+                if ($isRec !== $existingRec) {
+                    $reportModel->toggleClientReceived($id, $isRec);
+                }
+            }
+            if (!empty($existing['initial_payment_date'])) {
+                $reportModel->syncWeeklyReportForDate($existing['initial_payment_date']);
+            }
+            if (!empty($data['initial_payment_date']) && $data['initial_payment_date'] !== ($existing['initial_payment_date'] ?? '')) {
+                $reportModel->syncWeeklyReportForDate($data['initial_payment_date']);
+            }
         }
 
         return $success;
@@ -212,7 +261,16 @@ class Client extends Model {
 
     public function delete(int $id): bool {
         if (!$this->isConnected()) return false;
+        $existing = $this->getById($id);
         $sql = "DELETE FROM `clients` WHERE `id` = :id";
-        return $this->query($sql, [':id' => $id]) !== null;
+        $stmt = $this->query($sql, [':id' => $id]);
+        $success = ($stmt !== null);
+        if ($success && $existing) {
+            $this->query("DELETE FROM `weekly_report_records` WHERE `client_id` = :client_id", [':client_id' => $id]);
+            if (!empty($existing['initial_payment_date'])) {
+                (new \App\Models\WeeklyReport())->syncWeeklyReportForDate($existing['initial_payment_date']);
+            }
+        }
+        return $success;
     }
 }

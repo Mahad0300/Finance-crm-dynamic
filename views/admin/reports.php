@@ -25,7 +25,7 @@ require VIEWS_PATH . '/admin/layouts/header.php';
                 <div class="report-week-custom-dropdown" id="reportWeekCustomDropdown">
                     <button type="button" class="btn-week-dropdown-trigger" id="btnWeekDropdownTrigger" aria-expanded="false" aria-haspopup="true">
                         <i class="fa-regular fa-calendar-days text-brand"></i>
-                        <span id="currentWeekTriggerText" class="week-trigger-label"><?= e($activeWeek['title'] ?? 'Select Week') ?></span>
+                        <span id="currentWeekTriggerText" class="week-trigger-label"><?= e($activeWeek['date_range'] ?? preg_replace('/^Week\s+\d+:\s*/i', '', $activeWeek['title'] ?? '') ?: 'Select Week') ?></span>
                         <i class="fa-solid fa-chevron-down week-trigger-caret"></i>
                     </button>
 
@@ -34,12 +34,12 @@ require VIEWS_PATH . '/admin/layouts/header.php';
                         <?php if (!empty($availableWeeks)): ?>
                             <?php foreach ($availableWeeks as $w): ?>
                                 <option value="<?= $w['start_date'] ?>" <?= ($activeWeek && $activeWeek['start_date'] === $w['start_date']) ? 'selected' : '' ?>>
-                                    <?= e($w['title']) ?>
+                                    <?= e($w['date_range'] ?? preg_replace('/^Week\s+\d+:\s*/i', '', $w['title'] ?? '')) ?>
                                 </option>
                             <?php endforeach; ?>
                         <?php else: ?>
                             <option value="<?= $activeWeek['start_date'] ?? date('Y-m-d') ?>">
-                                <?= e($activeWeek['title'] ?? 'Current Week') ?>
+                                <?= e($activeWeek['date_range'] ?? preg_replace('/^Week\s+\d+:\s*/i', '', $activeWeek['title'] ?? '') ?: 'Current Week') ?>
                             </option>
                         <?php endif; ?>
                     </select>
@@ -50,9 +50,8 @@ require VIEWS_PATH . '/admin/layouts/header.php';
                             <?php if (!empty($availableWeeks)): ?>
                                 <?php foreach ($availableWeeks as $w): ?>
                                     <?php $isSelected = ($activeWeek && $activeWeek['start_date'] === $w['start_date']); ?>
-                                    <div class="week-dropdown-item <?= $isSelected ? 'selected' : '' ?>" data-date="<?= $w['start_date'] ?>" data-title="<?= e($w['title']) ?>">
+                                    <div class="week-dropdown-item <?= $isSelected ? 'selected' : '' ?>" data-date="<?= $w['start_date'] ?>" data-title="<?= e($w['date_range'] ?? $w['title']) ?>">
                                         <div class="week-item-info">
-                                            <span class="week-pill-badge"><?= e($w['week_label'] ?? 'Week') ?></span>
                                             <span class="week-item-title"><?= e($w['date_range'] ?? $w['title']) ?></span>
                                         </div>
                                     </div>

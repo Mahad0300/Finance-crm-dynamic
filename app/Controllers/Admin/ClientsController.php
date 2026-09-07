@@ -56,6 +56,16 @@ class ClientsController extends Controller
         $rawPlan = $_POST['plan'] ?? null;
         $plan = ($rawPlan !== null && $rawPlan !== '' && $rawPlan !== 'null' && $rawPlan !== 'undefined') ? (int)$rawPlan : null;
 
+        $today = date('Y-m-d');
+        $rawStatus = (!empty($_POST['status']) && $_POST['status'] !== 'null') ? trim($_POST['status']) : null;
+        if (($user['role'] ?? '') === 'client_user') {
+            $status = 'Submit';
+        } else if (!empty($initialPaymentDate) && $initialPaymentDate <= $today) {
+            $status = (empty($rawStatus) || $rawStatus === 'Submit') ? 'Approval' : $rawStatus;
+        } else {
+            $status = (empty($rawStatus) || $rawStatus === 'Approval') ? 'Submit' : $rawStatus;
+        }
+
         $data = [
             'date'                 => (!empty($_POST['date']) && $_POST['date'] !== 'null') ? $_POST['date'] : date('Y-m-d'),
             'client_name'          => trim($_POST['clientName'] ?? $_POST['client_name'] ?? ''),
@@ -63,7 +73,7 @@ class ClientsController extends Controller
             'smart_agent_name'     => trim($_POST['smartAgent'] ?? $_POST['smart_agent_name'] ?? ''),
             'super_agent_name'     => trim($_POST['superAgent'] ?? $_POST['super_agent_name'] ?? ''),
             'closer_name'          => trim($_POST['closer'] ?? $_POST['closer_name'] ?? ''),
-            'status'               => (!empty($_POST['status']) && $_POST['status'] !== 'null') ? $_POST['status'] : null,
+            'status'               => $status,
             'plan'                 => $plan,
             'monthly'              => $monthly,
             'initial_payment'      => $initialPayment,
@@ -91,6 +101,7 @@ class ClientsController extends Controller
 
     public function update(): void
     {
+        $user = $this->getCurrentUser();
         $id = (int)($_POST['id'] ?? 0);
         if ($id <= 0) {
             $this->jsonResponse(['success' => false, 'error' => 'Invalid ID'], 400);
@@ -121,6 +132,16 @@ class ClientsController extends Controller
         $rawPlan = $_POST['plan'] ?? null;
         $plan = ($rawPlan !== null && $rawPlan !== '' && $rawPlan !== 'null' && $rawPlan !== 'undefined') ? (int)$rawPlan : null;
 
+        $today = date('Y-m-d');
+        $rawStatus = (!empty($_POST['status']) && $_POST['status'] !== 'null') ? trim($_POST['status']) : null;
+        if (($user['role'] ?? '') === 'client_user') {
+            $status = $existingClient['status'] ?? 'Submit';
+        } else if (!empty($initialPaymentDate) && $initialPaymentDate <= $today) {
+            $status = ($rawStatus === 'Submit' || empty($rawStatus)) ? 'Approval' : $rawStatus;
+        } else {
+            $status = ($rawStatus === 'Approval' || empty($rawStatus)) ? 'Submit' : $rawStatus;
+        }
+
         $data = [
             'date'                 => (!empty($_POST['date']) && $_POST['date'] !== 'null') ? $_POST['date'] : ($existingClient['date'] ?? date('Y-m-d')),
             'client_name'          => trim($_POST['clientName'] ?? $_POST['client_name'] ?? ''),
@@ -128,7 +149,7 @@ class ClientsController extends Controller
             'smart_agent_name'     => trim($_POST['smartAgent'] ?? $_POST['smart_agent_name'] ?? ''),
             'super_agent_name'     => trim($_POST['superAgent'] ?? $_POST['super_agent_name'] ?? ''),
             'closer_name'          => trim($_POST['closer'] ?? $_POST['closer_name'] ?? ''),
-            'status'               => (!empty($_POST['status']) && $_POST['status'] !== 'null') ? $_POST['status'] : null,
+            'status'               => $status,
             'plan'                 => $plan,
             'monthly'              => $monthly,
             'initial_payment'      => $initialPayment,

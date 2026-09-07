@@ -8,6 +8,14 @@
 // 1. SELECT OPTIONS & AGENT INITIALIZATION
 // ============================================================================
 
+function getTodayLocalDateString() {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
+
 function populateSelectOptions() {
     const formPlan = document.getElementById('formPlan');
     const tblPlan = document.getElementById('tblPlan');
@@ -35,14 +43,6 @@ function populateSelectOptions() {
             tblPlan.appendChild(optionTbl);
         });
     }
-
-function getTodayLocalDateString() {
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, '0');
-    const d = String(now.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
-}
 
     // Set Default Today Date for Inline Entry (using local date, not UTC toISOString)
     if (tblDate && !tblDate.value) {
@@ -104,7 +104,13 @@ function getFilteredAndSortedClients() {
         }
 
         // 2. Top toolbar filters
-        if (status && c.status !== status) return false;
+        if (status) {
+            if (status === 'Approval') {
+                if (c.status !== 'Approval' && c.status !== 'Charged') return false;
+            } else if (c.status !== status) {
+                return false;
+            }
+        }
         if (plan && String(c.plan) !== String(plan)) return false;
         if (receiving && c.receiving !== receiving) return false;
 
@@ -120,7 +126,9 @@ function getFilteredAndSortedClients() {
                 if (colKey === 'plan') {
                     if (!normalizedSet.includes(String(c.plan).toLowerCase())) return false;
                 } else if (colKey === 'status') {
-                    if (!normalizedSet.includes((c.status || '').toLowerCase())) return false;
+                    const cStat = (c.status || '').toLowerCase();
+                    const match = normalizedSet.some(val => val === cStat || (val === 'approval' && cStat === 'charged'));
+                    if (!match) return false;
                 } else if (colKey === 'receiving') {
                     if (!normalizedSet.includes((c.receiving || '').toLowerCase())) return false;
                 } else if (colKey === 'smartAgent') {
@@ -297,11 +305,8 @@ function renderClientTable() {
                         </div>
                     </td>
                     <td>
-                        <select class="tbl-select" id="editStatus_${client.id}">
-                            <option value="Submit" ${client.status === 'Submit' ? 'selected' : ''}>Submit</option>
-                            <option value="Charged" ${client.status === 'Charged' ? 'selected' : ''}>Charged</option>
-                            <option value="Kick Back" ${client.status === 'Kick Back' ? 'selected' : ''}>Kick Back</option>
-                        </select>
+                        <input type="hidden" id="editStatus_${client.id}" value="${escapeHtml(client.status || 'Submit')}">
+                        ${getStatusBadgeHtml(client.status || 'Submit')}
                     </td>
                     <td>
                         <select class="tbl-select" id="editPlan_${client.id}">
@@ -362,12 +367,7 @@ function renderClientTable() {
                 };
                 tr.innerHTML = `
                     <td>${formatDateDisplay(client.date)}</td>
-                    <td>
-                        <span class="client-name-link" data-client-id="${client.id}" title="Click to view full transaction ledger for ${escapeHtml(client.clientName)}">
-                            <span class="client-name-text">${escapeHtml(client.clientName)}</span>
-                            <i class="fa-solid fa-arrow-up-right-from-square client-name-link-icon"></i>
-                        </span>
-                    </td>
+                    <td class="font-bold">${escapeHtml(client.clientName)}</td>
                     <td>${escapeHtml(client.connector || '-')}</td>
                     <td>${getSmartAgentBadgeHtml(client.smartAgent)}</td>
                     <td>${getSuperAgentBadgeHtml(client.superAgent)}</td>
@@ -383,15 +383,6 @@ function renderClientTable() {
                 `;
                 clientsTableBody.appendChild(tr);
             }
-        });
-
-        // Client ledger click listener
-        clientsTableBody.querySelectorAll('.client-name-link').forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const cId = parseInt(link.getAttribute('data-client-id'), 10);
-                if (cId) loadClientLedgerOnClientsPage(cId);
-            });
         });
     }
 
@@ -449,7 +440,7 @@ function saveInlineEdit(clientId) {
     const monthlyNum = (monthlyInp && monthlyInp.value !== '') ? parseFloat(monthlyInp.value) : null;
     const initialNum = (initialInp && initialInp.value !== '') ? parseFloat(initialInp.value) : null;
 
-    if (initialNum !== null && initialNum < 250) {
+    if (initialNum !== null && initialNum > 0 && initialNum < 250) {
         if (initialInp) {
             initialInp.classList.add('is-invalid');
             initialInp.focus();
@@ -462,7 +453,10 @@ function saveInlineEdit(clientId) {
     const planVal = (planInp && planInp.value !== '') ? parseInt(planInp.value) : null;
     const calc = initialNum !== null ? calculateApprovalAndResidual(initialNum) : { approval: null, residual: null };
 
-    const clientIdx = state.clients.findIndex(c => c.id === clientId);
+    const todayStr = getTodayLocalDateString();
+    const initialPaymentDateVal = initialDateInp ? initialDateInp.value : '';
+    const clientIdx = state.clients.findIndex(c => String(c.id) === String(clientId));
+    const statusVal = (clientIdx !== -1 && state.clients[clientIdx].status) ? state.clients[clientIdx].status : 'Submit';
     if (clientIdx !== -1) {
         state.clients[clientIdx] = {
             ...state.clients[clientIdx],
@@ -472,11 +466,11 @@ function saveInlineEdit(clientId) {
             smartAgent: smartInp ? smartInp.value : '',
             superAgent: superInp ? superInp.value : '',
             closer: closerInp ? closerInp.value : '',
-            status: statusInp ? statusInp.value : '',
+            status: statusVal,
             plan: planVal,
             monthly: monthlyNum,
             initialPayment: initialNum,
-            initialPaymentDate: initialDateInp ? initialDateInp.value : '',
+            initialPaymentDate: initialPaymentDateVal,
             approvalAmount: calc.approval,
             residual: calc.residual,
             receiving: state.clients[clientIdx].receiving || 'Pending'
@@ -769,12 +763,14 @@ function handleInlineSaveClient() {
     const smartAgentVal = tblSmartAgent ? tblSmartAgent.value : '';
     const superAgentVal = tblSuperAgent ? tblSuperAgent.value : '';
     const closerVal = tblCloser ? tblCloser.value : '';
-    const statusVal = tblStatus ? tblStatus.value : '';
-    const planVal = tblPlan && tblPlan.value ? parseInt(tblPlan.value) : null;
+    const todayStr = getTodayLocalDateString();
+    const initialPaymentDateVal = tblInitialPaymentDate ? tblInitialPaymentDate.value : '';
+
+    const planVal = (tblPlan && tblPlan.value !== '') ? parseInt(tblPlan.value, 10) : null;
     const monthlyVal = (tblMonthly && tblMonthly.value !== '') ? parseFloat(tblMonthly.value) : null;
     const initialPaymentVal = (tblInitialPayment && tblInitialPayment.value !== '') ? parseFloat(tblInitialPayment.value) : null;
 
-    if (initialPaymentVal !== null && initialPaymentVal < 250) {
+    if (initialPaymentVal !== null && initialPaymentVal > 0 && initialPaymentVal < 250) {
         if (tblInitialPayment) {
             tblInitialPayment.classList.add('is-invalid');
             tblInitialPayment.focus();
@@ -784,7 +780,7 @@ function handleInlineSaveClient() {
     }
     if (tblInitialPayment) tblInitialPayment.classList.remove('is-invalid');
 
-    const initialPaymentDateVal = tblInitialPaymentDate ? tblInitialPaymentDate.value : '';
+    const statusVal = 'Submit';
 
     const calc = initialPaymentVal !== null ? calculateApprovalAndResidual(initialPaymentVal) : { approval: null, residual: null };
     const receivingVal = 'Pending';
@@ -1011,6 +1007,8 @@ document.addEventListener('DOMContentLoaded', () => {
         tblInitialPayment.addEventListener('input', updateInlineTableCalculations);
     }
 
+
+
     const inlineInputs = [
         document.getElementById('tblDate'),
         document.getElementById('tblClientName'),
@@ -1109,13 +1107,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 2. If currently adding a new client row (inlineAddRow)
         const inlineRow = document.getElementById('inlineAddRow');
-        const btnOpenModal = document.getElementById('btnOpenAddModal');
-        const btnHeaderAdd = document.querySelector('.btn-header-add');
+        const isAddButton = e.target.closest && (e.target.closest('.btn-header-add') || e.target.closest('#btnOpenAddModal') || e.target.closest('#btnEmptyAddClient'));
 
         if (inlineRow && (inlineRow.style.display === 'table-row' || (!inlineRow.classList.contains('d-none') && inlineRow.style.display !== 'none'))) {
             const isInsideAddRow = inlineRow.contains(e.target);
-            const isAddButton = (btnOpenModal && btnOpenModal.contains(e.target)) ||
-                                (btnHeaderAdd && btnHeaderAdd.contains(e.target));
 
             if (!isInsideAddRow && !isAddButton) {
                 const clientNameInput = document.getElementById('tblClientName');
@@ -1130,182 +1125,5 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Exit Client Ledger Button Handler
-    const btnExit = document.getElementById('btnExitLedger');
-    if (btnExit) {
-        btnExit.addEventListener('click', exitClientLedgerOnClientsPage);
-    }
 });
 
-// ============================================================================
-// 10. CLIENT STATEMENT / LEDGER FEATURE (IN-PAGE STATEMENT)
-// ============================================================================
-
-async function loadClientLedgerOnClientsPage(clientId) {
-    if (!clientId) return;
-    try {
-        const baseUrl = (window.APP_CONFIG && window.APP_CONFIG.baseUrl) ? window.APP_CONFIG.baseUrl : '';
-        const response = await fetch(`${baseUrl}/api/reports/client-ledger`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: `client_id=${encodeURIComponent(clientId)}`
-        });
-        const data = await response.json();
-        if (data && data.success && data.records) {
-            renderClientLedgerOnClientsPage(data);
-        } else {
-            console.error('Failed to load client ledger:', data.error);
-        }
-    } catch (err) {
-        console.error('Error fetching client ledger:', err);
-    }
-}
-
-function renderClientLedgerOnClientsPage(data) {
-    const ledgerView = document.getElementById('clientLedgerView');
-    const toolbar = document.getElementById('clientsToolbar');
-    const tableWrapper = document.getElementById('clientsTableWrapper');
-    const nameEl = document.getElementById('ledgerClientName');
-    const tbody = document.getElementById('clientStatementTableBody');
-
-    if (!ledgerView || !tbody) return;
-
-    if (toolbar) toolbar.style.display = 'none';
-    if (tableWrapper) tableWrapper.style.display = 'none';
-    ledgerView.style.display = 'block';
-
-    if (nameEl) {
-        nameEl.textContent = data.client.name;
-    }
-
-    tbody.innerHTML = '';
-
-    const records = data.records;
-    if (records.length === 0) {
-        const emptyTr = document.createElement('tr');
-        emptyTr.innerHTML = `<td colspan="6" class="text-center text-muted" style="padding: 30px;">No statement records found for this client.</td>`;
-        tbody.appendChild(emptyTr);
-        return;
-    }
-
-    const now = new Date();
-    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-
-    records.forEach(rec => {
-        const tr = document.createElement('tr');
-
-        const appAmount = rec.approval_payment ? parseFloat(rec.approval_payment) : 0;
-        const resAmount = rec.residual_payment ? parseFloat(rec.residual_payment) : 0;
-
-        const approvalDisplay = appAmount > 0 
-            ? formatCurrency(appAmount) 
-            : `<span class="text-muted-dash">-</span>`;
-
-        const residualDisplay = resAmount > 0 
-            ? formatCurrency(resAmount) 
-            : `<span class="text-muted-dash">-</span>`;
-
-        // Checkbox availability rules:
-        // 1. Client must be Charged (not Submit or Kick Back)
-        // 2. Week's Tuesday audit day must have arrived (not ongoing/future week)
-        // 3. Payment date cannot be in the future
-        const isFuture = rec.date > todayStr;
-        const isCharged = (rec.is_charged !== undefined) ? rec.is_charged : (data.client.status === 'Charged');
-        const isAudited = (rec.is_audited !== undefined) ? rec.is_audited : (!rec.audit_date || rec.audit_date <= todayStr);
-        const canReceive = isCharged && isAudited && !isFuture;
-
-        let disabledReason = '';
-        if (!isCharged) {
-            disabledReason = `Cannot mark received: Client status is "${data.client.status || 'Submit'}" (must be Charged)`;
-        } else if (!isAudited) {
-            const nextAuditStr = rec.audit_formatted ? rec.audit_formatted : (rec.audit_date || 'next week');
-            disabledReason = `Cannot mark received: Audit for this weekly report opens next week on ${nextAuditStr}`;
-        } else if (isFuture) {
-            disabledReason = `Cannot mark received: Date (${formatDateDisplay(rec.date)}) is in the future`;
-        }
-
-        const isApprovalRow = (appAmount > 0);
-        const clientId = data.client.id;
-
-        tr.innerHTML = `
-            <td class="cell-rep-date font-mono">${formatDateDisplay(rec.date)}</td>
-            <td class="cell-rep-name font-bold">${escapeHtml(data.client.name)}</td>
-            <td class="cell-rep-plan font-bold text-center">${rec.plan} Months</td>
-            <td class="currency-val cell-rep-initial font-bold">${approvalDisplay}</td>
-            <td class="currency-val cell-rep-residual font-bold text-primary">${residualDisplay}</td>
-            <td class="cell-rep-checkbox text-center">
-                <label class="crm-custom-chk ${!canReceive ? 'chk-disabled' : ''}" 
-                       title="${!canReceive ? disabledReason : 'Click to toggle received status'}">
-                    <input type="checkbox" 
-                        class="crm-chk-native ledger-receiving-checkbox" 
-                        data-client-id="${clientId}"
-                        data-record-id="${rec.record_id || ''}"
-                        data-is-approval="${isApprovalRow ? '1' : '0'}"
-                        data-payment-type="${rec.payment_type || (isApprovalRow ? 'Approval Payment' : 'Residual Payment')}"
-                        data-date="${rec.date}"
-                        ${rec.is_received ? 'checked' : ''} 
-                        ${!canReceive ? 'disabled' : ''}>
-                    <span class="crm-chk-box">
-                        <i class="fa-solid fa-check"></i>
-                    </span>
-                </label>
-            </td>
-        `;
-        tbody.appendChild(tr);
-    });
-
-    // Checkbox toggle listener for ledger rows (only active for enabled rows <= today)
-    tbody.querySelectorAll('.ledger-receiving-checkbox:not(:disabled)').forEach(chk => {
-        chk.addEventListener('change', (e) => {
-            const cId = parseInt(e.target.getAttribute('data-client-id'), 10);
-            const recordId = e.target.getAttribute('data-record-id');
-            const pType = e.target.getAttribute('data-payment-type');
-            const pDate = e.target.getAttribute('data-date');
-            const isApproval = e.target.getAttribute('data-is-approval') === '1';
-            const isChecked = e.target.checked;
-
-            if (window.APP_CONFIG && window.APP_CONFIG.baseUrl) {
-                const params = new URLSearchParams();
-                params.append('client_id', cId);
-                params.append('id', cId);
-                if (recordId) params.append('record_id', recordId);
-                if (pType) params.append('payment_type', pType);
-                if (pDate) params.append('date', pDate);
-                params.append('is_received', isChecked ? '1' : '0');
-
-                fetch(`${window.APP_CONFIG.baseUrl}/api/reports/toggle`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: params.toString()
-                }).then(res => res.json())
-                .then(res => {
-                    if (res.success) {
-                        if (isApproval) {
-                            // Update client in local state so Client Data table stays synced
-                            const cl = state.clients.find(c => c.id === cId);
-                            if (cl) {
-                                cl.receiving = isChecked ? 'Received' : 'Pending';
-                                cl.is_received = isChecked ? 1 : 0;
-                            }
-                        }
-                        const label = isApproval ? 'Approval Payment' : 'Residual Payment';
-                        showToast('success', 'Status Updated', `${label} marked as ${isChecked ? 'Received' : 'Pending'}.`);
-                    }
-                }).catch(err => console.log('Ledger toggle offline sync', err));
-            }
-        });
-    });
-
-    // Scroll to top of ledger view smoothly
-    ledgerView.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-
-function exitClientLedgerOnClientsPage() {
-    const ledgerView = document.getElementById('clientLedgerView');
-    const toolbar = document.getElementById('clientsToolbar');
-    const tableWrapper = document.getElementById('clientsTableWrapper');
-
-    if (ledgerView) ledgerView.style.display = 'none';
-    if (toolbar) toolbar.style.display = '';
-    if (tableWrapper) tableWrapper.style.display = '';
-}

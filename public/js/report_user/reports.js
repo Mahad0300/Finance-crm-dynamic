@@ -122,9 +122,12 @@ function renderCombinedReportsTable() {
     if (clients.length === 0) {
         const emptyTr = document.createElement('tr');
         emptyTr.innerHTML = `
-            <td colspan="6" class="text-center text-muted" style="padding: 36px 16px;">
-                <i class="fa-solid fa-calendar-xmark" style="font-size: 26px; margin-bottom: 8px; display:block; color: #94A3B8;"></i>
-                No charged client payments scheduled for this Monday - Sunday work week.
+            <td colspan="6" class="rep-empty-cell">
+                <div class="rep-empty-content">
+                    <span class="rep-empty-icon"><i class="fa-solid fa-calendar-xmark"></i></span>
+                    <div class="rep-empty-title">No Client Payments Scheduled</div>
+                    <div class="rep-empty-desc">No charged client payments scheduled for this Monday - Sunday work week.</div>
+                </div>
             </td>
         `;
         tbody.appendChild(emptyTr);

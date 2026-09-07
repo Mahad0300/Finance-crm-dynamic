@@ -220,6 +220,14 @@ function formatCurrency(amount) {
     });
 }
 
+function getTodayLocalDateString() {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
+
 function formatDateDisplay(dateStr) {
     if (!dateStr) return '<span class="text-muted-dash">-</span>';
     try {
@@ -263,6 +271,8 @@ function getStatusBadgeHtml(status) {
     }
     if (status === 'Submit') {
         return `<span class="status-pill pill-submit">Submit</span>`;
+    } else if (status === 'Approval') {
+        return `<span class="status-pill pill-approval">Approval</span>`;
     } else if (status === 'Charged') {
         return `<span class="status-pill pill-charged">Charged</span>`;
     } else if (status === 'Kick Back') {
@@ -729,7 +739,7 @@ function openThFilterPopover(triggerBtn, colKey, colTitle) {
             }
         } else {
             if (colKey === 'status') {
-                uniqueValues = ['Submit', 'Charged', 'Kick Back'];
+                uniqueValues = ['Submit', 'Approval', 'Charged', 'Kick Back'];
             } else if (colKey === 'plan') {
                 uniqueValues = availablePlans.map(p => String(p));
             } else if (colKey === 'receiving') {

@@ -37,13 +37,13 @@ class WeeklyReport extends Model {
         $startFormatted = date('M d', $mondayTimestamp);
         $endFormatted = date('M d, Y', $sundayTimestamp);
         $dateRange = "{$startFormatted} - {$endFormatted}";
-        $thursdayTimestamp = strtotime('+3 days', $mondayTimestamp);
-        $cycleMonth = date('Y-m', $thursdayTimestamp);
-        $title = "Week {$weekNumber}: {$dateRange}";
+        // Monday (Start Date) determines the month: if Monday is in previous month, the week belongs to that previous month
+        $cycleMonth = date('Y-m', $mondayTimestamp);
+        $title = $dateRange;
 
         return [
             'week_number'     => $weekNumber,
-            'week_label'      => "Week {$weekNumber}",
+            'week_label'      => $dateRange,
             'date_range'      => $dateRange,
             'start_date'      => $startDate,
             'end_date'        => $endDate,
@@ -64,11 +64,12 @@ class WeeklyReport extends Model {
     public function getAvailableWeeks(): array {
         if (!$this->isConnected()) return [];
 
+        (new Client())->syncDueApprovalStatuses();
         $today = date('Y-m-d');
 
         $sql = "SELECT DISTINCT `initial_payment_date` 
                 FROM `clients` 
-                WHERE `status` = 'Charged'
+                WHERE `status` IN ('Approval', 'Charged')
                   AND `initial_payment_date` IS NOT NULL 
                   AND `initial_payment_date` != '' 
                   AND `initial_payment_date` != '0000-00-00'
@@ -84,13 +85,6 @@ class WeeklyReport extends Model {
                 $meta = $this->getWeekMeta($sr['start_date']);
                 // Strict business rule: Only include completed weeks whose Tuesday audit date has arrived
                 if ($meta['audit_date'] <= $today) {
-                    if (!empty($sr['title'])) {
-                        $meta['title'] = $sr['title'];
-                        if (preg_match('/^Week\s+(\d+)/i', $sr['title'], $m)) {
-                            $meta['week_number'] = (int)$m[1];
-                            $meta['week_label'] = "Week " . $m[1];
-                        }
-                    }
                     $key = $meta['start_date'] . '_' . $meta['end_date'];
                     $weeksMap[$key] = $meta;
                 }
@@ -134,54 +128,22 @@ class WeeklyReport extends Model {
     public function getWeeklyTransactions(string $mondayDate, string $sundayDate): array {
         if (!$this->isConnected()) return [];
 
-        // 1. Check if records exist in weekly_report_records for this week's report
-        $report = $this->fetchOne("SELECT `id` FROM `weekly_reports` WHERE `start_date` = :start_date AND `end_date` = :end_date LIMIT 1", [
-            ':start_date' => $mondayDate,
-            ':end_date'   => $sundayDate
-        ]);
+        (new Client())->syncDueApprovalStatuses();
 
-        if ($report) {
-            $sql = "SELECT 
-                        r.id,
-                        r.id as record_id,
-                        r.report_id,
-                        r.client_id,
-                        r.initial_payment_date,
-                        r.receiving_payment_date as `date`,
-                        r.payment_type,
-                        r.is_received,
-                        c.client_name,
-                        c.plan,
-                        CASE WHEN r.payment_type = 'Approval Payment' THEN c.approval_amount ELSE NULL END as approval_payment,
-                        CASE WHEN r.payment_type = 'Residual Payment' THEN c.residual ELSE NULL END as residual_payment,
-                        CASE 
-                            WHEN r.is_received = 1 THEN 'Received' 
-                            ELSE 'Pending' 
-                        END as receiving
-                    FROM `weekly_report_records` r
-                    INNER JOIN `clients` c ON c.id = r.client_id
-                    WHERE r.report_id = :report_id
-                    ORDER BY r.receiving_payment_date ASC, r.id ASC";
-            $records = $this->fetchAll($sql, [':report_id' => $report['id']]);
-            if (!empty($records)) {
-                return $records;
-            }
-        }
-
-        // 2. New Approvals signed up during this Monday-Sunday week (All Charged clients, whether Pending or Received)
+        // 1. New Approvals signed up during this Monday-Sunday week (All Approved/Charged clients, whether Pending or Received)
         $sqlNew = "SELECT `id`, `initial_payment_date` as `date`, `initial_payment_date`, `client_name`, `plan`, 
                           `approval_amount` as `approval_payment`, NULL as `residual_payment`, 
                           'Approval Payment' as `payment_type`, `receiving`, `id` as `client_id`,
                           CASE WHEN `receiving` = 'Received' THEN 1 ELSE 0 END as `is_received`
                    FROM `clients`
-                   WHERE `status` = 'Charged'
+                   WHERE `status` IN ('Approval', 'Charged')
                      AND `initial_payment_date` >= :start_date 
                      AND `initial_payment_date` <= :end_date
                    ORDER BY `initial_payment_date` ASC, `id` ASC";
         $stmtNew = $this->query($sqlNew, [':start_date' => $mondayDate, ':end_date' => $sundayDate]);
         $newApprovals = $stmtNew ? $stmtNew->fetchAll(\PDO::FETCH_ASSOC) : [];
 
-        // 3. Build map of the 7 days in this week (Monday through Sunday)
+        // 2. Build map of the 7 days in this week (Monday through Sunday)
         $workDays = [];
         $curr = strtotime($mondayDate);
         $sun = strtotime($sundayDate);
@@ -196,7 +158,7 @@ class WeeklyReport extends Model {
             $curr = strtotime('+1 day', $curr);
         }
 
-        // 4. Recurring Residuals from clients created before this week (All Charged clients)
+        // 3. Recurring Residuals from clients created before this week (Only Charged clients who paid initial payment)
         $sqlPast = "SELECT `id`, `initial_payment_date`, `client_name`, `plan`, `residual`, `receiving`
                     FROM `clients`
                     WHERE `status` = 'Charged'
@@ -247,17 +209,50 @@ class WeeklyReport extends Model {
             return $cmp;
         });
 
-        // 5. If weekly_report exists but has no records yet, sync them to weekly_report_records
-        if ($report && !empty($allTransactions)) {
-            $this->syncWeeklyReportRecords((int)$report['id'], $allTransactions);
+        // 4. If weekly_reports record exists, ensure all transactions are synced into weekly_report_records
+        $report = $this->fetchOne("SELECT `id` FROM `weekly_reports` WHERE `start_date` = :start_date AND `end_date` = :end_date LIMIT 1", [
+            ':start_date' => $mondayDate,
+            ':end_date'   => $sundayDate
+        ]);
+
+        if ($report) {
+            $reportId = (int)$report['id'];
+            $this->syncWeeklyReportRecords($reportId, $allTransactions);
+
+            $sql = "SELECT 
+                        r.id,
+                        r.id as record_id,
+                        r.report_id,
+                        r.client_id,
+                        r.initial_payment_date,
+                        r.receiving_payment_date as `date`,
+                        r.payment_type,
+                        r.is_received,
+                        c.client_name,
+                        c.plan,
+                        CASE WHEN r.payment_type = 'Approval Payment' THEN c.approval_amount ELSE NULL END as approval_payment,
+                        CASE WHEN r.payment_type = 'Residual Payment' THEN c.residual ELSE NULL END as residual_payment,
+                        CASE 
+                            WHEN r.is_received = 1 THEN 'Received' 
+                            ELSE 'Pending' 
+                        END as receiving
+                    FROM `weekly_report_records` r
+                    INNER JOIN `clients` c ON c.id = r.client_id
+                    WHERE r.report_id = :report_id
+                    ORDER BY r.receiving_payment_date ASC, r.id ASC";
+            $records = $this->fetchAll($sql, [':report_id' => $reportId]);
+            if (!empty($records)) {
+                return $records;
+            }
         }
 
         return $allTransactions;
     }
 
     public function syncWeeklyReportRecords(int $reportId, array $transactions): void {
-        if (!$this->isConnected() || empty($transactions)) return;
+        if (!$this->isConnected()) return;
         
+        $validKeys = [];
         $insertSql = "INSERT INTO `weekly_report_records` 
                       (`report_id`, `client_id`, `initial_payment_date`, `receiving_payment_date`, `payment_type`, `is_received`)
                       VALUES (:report_id, :client_id, :initial_date, :recv_date, :payment_type, :is_received)";
@@ -268,11 +263,12 @@ class WeeklyReport extends Model {
             $recvDate = $t['date'];
             $pType = (strpos($t['payment_type'], 'Residual') !== false) ? 'Residual Payment' : 'Approval Payment';
             $isReceived = (strtolower((string)($t['receiving'] ?? '')) === 'received' || !empty($t['is_received'])) ? 1 : 0;
+            $validKeys[] = "{$cId}_{$pType}_{$recvDate}";
             
             $exists = $this->fetchOne(
-                "SELECT `id` FROM `weekly_report_records` 
-                 WHERE `report_id` = :report_id AND `client_id` = :client_id AND `payment_type` = :payment_type LIMIT 1",
-                [':report_id' => $reportId, ':client_id' => $cId, ':payment_type' => $pType]
+                "SELECT `id`, `is_received` FROM `weekly_report_records` 
+                 WHERE `report_id` = :report_id AND `client_id` = :client_id AND `payment_type` = :payment_type AND `receiving_payment_date` = :recv_date LIMIT 1",
+                [':report_id' => $reportId, ':client_id' => $cId, ':payment_type' => $pType, ':recv_date' => $recvDate]
             );
             if (!$exists) {
                 $this->query($insertSql, [
@@ -283,6 +279,22 @@ class WeeklyReport extends Model {
                     ':payment_type' => $pType,
                     ':is_received'  => $isReceived
                 ]);
+            } else if ($pType === 'Approval Payment') {
+                if ((int)$exists['is_received'] !== $isReceived) {
+                    $this->query("UPDATE `weekly_report_records` SET `is_received` = :is_received WHERE `id` = :id", [
+                        ':is_received' => $isReceived,
+                        ':id'          => $exists['id']
+                    ]);
+                }
+            }
+        }
+
+        // Clean up any stale records no longer eligible for this report
+        $currentRecords = $this->fetchAll("SELECT `id`, `client_id`, `payment_type`, `receiving_payment_date` FROM `weekly_report_records` WHERE `report_id` = :report_id", [':report_id' => $reportId]);
+        foreach ($currentRecords as $cr) {
+            $key = "{$cr['client_id']}_{$cr['payment_type']}_{$cr['receiving_payment_date']}";
+            if (!in_array($key, $validKeys, true)) {
+                $this->query("DELETE FROM `weekly_report_records` WHERE `id` = :id", [':id' => $cr['id']]);
             }
         }
     }
@@ -350,8 +362,6 @@ class WeeklyReport extends Model {
         return $sum;
     }
 
-
-
     /**
      * Get or create a weekly_reports summary record to hold total_received_entered.
      */
@@ -381,6 +391,24 @@ class WeeklyReport extends Model {
             ':start_date' => $startDate,
             ':end_date'   => $endDate
         ]);
+    }
+
+    /**
+     * Synchronize a specific week's weekly_reports and weekly_report_records immediately
+     */
+    public function syncWeeklyReportForDate(string $date): void {
+        if (!$this->isConnected() || empty($date) || $date === '0000-00-00') return;
+        try {
+            $meta = $this->getWeekMeta($date);
+            $report = $this->getOrCreateWeeklyReport($meta['start_date'], $meta['end_date']);
+            if ($report) {
+                $txs = $this->getWeeklyTransactions($meta['start_date'], $meta['end_date']);
+                $this->syncWeeklyReportRecords((int)$report['id'], $txs);
+                $this->recalculateReportTotals((int)$report['id']);
+            }
+        } catch (\Throwable $e) {
+            // Silently continue
+        }
     }
 
     /**
@@ -520,13 +548,15 @@ class WeeklyReport extends Model {
                 }
             }
 
-            // 3. ONLY update clients.receiving if this transaction is an Approval Payment!
-            // Residual payments are independent and must NEVER alter clients.receiving!
+            // 3. ONLY update clients.receiving & status if this transaction is an Approval Payment!
+            // Residual payments are independent and must NEVER alter clients.receiving or status!
             if ($isApproval && $clientId > 0) {
                 $receiving = $isReceived ? 'Received' : 'Pending';
-                $this->query("UPDATE `clients` SET `receiving` = :receiving WHERE `id` = :id", [
+                $status = $isReceived ? 'Charged' : 'Approval';
+                $this->query("UPDATE `clients` SET `receiving` = :receiving, `status` = :status WHERE `id` = :id", [
                     ':id'        => $clientId,
-                    ':receiving' => $receiving
+                    ':receiving' => $receiving,
+                    ':status'    => $status
                 ]);
             }
 
@@ -684,7 +714,7 @@ class WeeklyReport extends Model {
 
         // Upfront Approval Payment row
         $today = date('Y-m-d');
-        $isCharged = (strtolower((string)($client['status'] ?? '')) === 'charged');
+        $isCharged = in_array(strtolower((string)($client['status'] ?? '')), ['approval', 'charged']);
         $isAudited = ($meta1['audit_date'] <= $today);
         $canReceive = $isCharged && $isAudited;
 

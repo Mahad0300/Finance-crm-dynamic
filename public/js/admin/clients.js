@@ -8,6 +8,14 @@
 // 1. SELECT OPTIONS & AGENT INITIALIZATION
 // ============================================================================
 
+function getTodayLocalDateString() {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
+
 function populateSelectOptions() {
     const formPlan = document.getElementById('formPlan');
     const tblPlan = document.getElementById('tblPlan');
@@ -35,14 +43,6 @@ function populateSelectOptions() {
             tblPlan.appendChild(optionTbl);
         });
     }
-
-function getTodayLocalDateString() {
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, '0');
-    const d = String(now.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
-}
 
     // Set Default Today Date for Inline Entry (using local date, not UTC toISOString)
     if (tblDate && !tblDate.value) {
@@ -104,7 +104,13 @@ function getFilteredAndSortedClients() {
         }
 
         // 2. Top toolbar filters
-        if (status && c.status !== status) return false;
+        if (status) {
+            if (status === 'Approval') {
+                if (c.status !== 'Approval' && c.status !== 'Charged') return false;
+            } else if (c.status !== status) {
+                return false;
+            }
+        }
         if (plan && String(c.plan) !== String(plan)) return false;
         if (receiving && c.receiving !== receiving) return false;
 
@@ -120,7 +126,9 @@ function getFilteredAndSortedClients() {
                 if (colKey === 'plan') {
                     if (!normalizedSet.includes(String(c.plan).toLowerCase())) return false;
                 } else if (colKey === 'status') {
-                    if (!normalizedSet.includes((c.status || '').toLowerCase())) return false;
+                    const cStat = (c.status || '').toLowerCase();
+                    const match = normalizedSet.some(val => val === cStat || (val === 'approval' && cStat === 'charged'));
+                    if (!match) return false;
                 } else if (colKey === 'receiving') {
                     if (!normalizedSet.includes((c.receiving || '').toLowerCase())) return false;
                 } else if (colKey === 'smartAgent') {
@@ -299,6 +307,7 @@ function renderClientTable() {
                     <td>
                         <select class="tbl-select" id="editStatus_${client.id}">
                             <option value="Submit" ${client.status === 'Submit' ? 'selected' : ''}>Submit</option>
+                            <option value="Approval" ${client.status === 'Approval' ? 'selected' : ''}>Approval</option>
                             <option value="Charged" ${client.status === 'Charged' ? 'selected' : ''}>Charged</option>
                             <option value="Kick Back" ${client.status === 'Kick Back' ? 'selected' : ''}>Kick Back</option>
                         </select>
@@ -338,6 +347,23 @@ function renderClientTable() {
                         const resEl = tr.querySelector(`#editResidual_${client.id}`);
                         if (apprEl) apprEl.innerHTML = formatCurrency(calc.approval);
                         if (resEl) resEl.innerHTML = formatCurrency(calc.residual);
+                    });
+                }
+
+                const editInitialDateInp = tr.querySelector(`#editInitialDate_${client.id}`);
+                const editStatusInp = tr.querySelector(`#editStatus_${client.id}`);
+                if (editInitialDateInp && editStatusInp) {
+                    editInitialDateInp.addEventListener('change', (e) => {
+                        const todayStr = getTodayLocalDateString();
+                        if (e.target.value && e.target.value <= todayStr) {
+                            if (!editStatusInp.value || editStatusInp.value === 'Submit') {
+                                editStatusInp.value = 'Approval';
+                            }
+                        } else {
+                            if (editStatusInp.value === 'Approval') {
+                                editStatusInp.value = 'Submit';
+                            }
+                        }
                     });
                 }
 
@@ -449,7 +475,7 @@ function saveInlineEdit(clientId) {
     const monthlyNum = (monthlyInp && monthlyInp.value !== '') ? parseFloat(monthlyInp.value) : null;
     const initialNum = (initialInp && initialInp.value !== '') ? parseFloat(initialInp.value) : null;
 
-    if (initialNum !== null && initialNum < 250) {
+    if (initialNum !== null && initialNum > 0 && initialNum < 250) {
         if (initialInp) {
             initialInp.classList.add('is-invalid');
             initialInp.focus();
@@ -462,7 +488,20 @@ function saveInlineEdit(clientId) {
     const planVal = (planInp && planInp.value !== '') ? parseInt(planInp.value) : null;
     const calc = initialNum !== null ? calculateApprovalAndResidual(initialNum) : { approval: null, residual: null };
 
-    const clientIdx = state.clients.findIndex(c => c.id === clientId);
+    const todayStr = getTodayLocalDateString();
+    const initialPaymentDateVal = initialDateInp ? initialDateInp.value : '';
+    let statusVal = statusInp ? statusInp.value : '';
+    if (initialPaymentDateVal && initialPaymentDateVal <= todayStr) {
+        if (!statusVal || statusVal === 'Submit') {
+            statusVal = 'Approval';
+        }
+    } else {
+        if (!statusVal || statusVal === 'Approval') {
+            statusVal = 'Submit';
+        }
+    }
+
+    const clientIdx = state.clients.findIndex(c => String(c.id) === String(clientId));
     if (clientIdx !== -1) {
         state.clients[clientIdx] = {
             ...state.clients[clientIdx],
@@ -472,11 +511,11 @@ function saveInlineEdit(clientId) {
             smartAgent: smartInp ? smartInp.value : '',
             superAgent: superInp ? superInp.value : '',
             closer: closerInp ? closerInp.value : '',
-            status: statusInp ? statusInp.value : '',
+            status: statusVal,
             plan: planVal,
             monthly: monthlyNum,
             initialPayment: initialNum,
-            initialPaymentDate: initialDateInp ? initialDateInp.value : '',
+            initialPaymentDate: initialPaymentDateVal,
             approvalAmount: calc.approval,
             residual: calc.residual,
             receiving: state.clients[clientIdx].receiving || 'Pending'
@@ -769,12 +808,14 @@ function handleInlineSaveClient() {
     const smartAgentVal = tblSmartAgent ? tblSmartAgent.value : '';
     const superAgentVal = tblSuperAgent ? tblSuperAgent.value : '';
     const closerVal = tblCloser ? tblCloser.value : '';
-    const statusVal = tblStatus ? tblStatus.value : '';
-    const planVal = tblPlan && tblPlan.value ? parseInt(tblPlan.value) : null;
+    const todayStr = getTodayLocalDateString();
+    const initialPaymentDateVal = tblInitialPaymentDate ? tblInitialPaymentDate.value : '';
+
+    const planVal = (tblPlan && tblPlan.value !== '') ? parseInt(tblPlan.value, 10) : null;
     const monthlyVal = (tblMonthly && tblMonthly.value !== '') ? parseFloat(tblMonthly.value) : null;
     const initialPaymentVal = (tblInitialPayment && tblInitialPayment.value !== '') ? parseFloat(tblInitialPayment.value) : null;
 
-    if (initialPaymentVal !== null && initialPaymentVal < 250) {
+    if (initialPaymentVal !== null && initialPaymentVal > 0 && initialPaymentVal < 250) {
         if (tblInitialPayment) {
             tblInitialPayment.classList.add('is-invalid');
             tblInitialPayment.focus();
@@ -784,7 +825,16 @@ function handleInlineSaveClient() {
     }
     if (tblInitialPayment) tblInitialPayment.classList.remove('is-invalid');
 
-    const initialPaymentDateVal = tblInitialPaymentDate ? tblInitialPaymentDate.value : '';
+    let statusVal = tblStatus ? tblStatus.value : '';
+    if (initialPaymentDateVal && initialPaymentDateVal <= todayStr) {
+        if (!statusVal || statusVal === 'Submit') {
+            statusVal = 'Approval';
+        }
+    } else {
+        if (!statusVal || statusVal === 'Approval') {
+            statusVal = 'Submit';
+        }
+    }
 
     const calc = initialPaymentVal !== null ? calculateApprovalAndResidual(initialPaymentVal) : { approval: null, residual: null };
     const receivingVal = 'Pending';
@@ -1011,6 +1061,23 @@ document.addEventListener('DOMContentLoaded', () => {
         tblInitialPayment.addEventListener('input', updateInlineTableCalculations);
     }
 
+    const tblInitialPaymentDate = document.getElementById('tblInitialPaymentDate');
+    const tblStatus = document.getElementById('tblStatus');
+    if (tblInitialPaymentDate && tblStatus) {
+        tblInitialPaymentDate.addEventListener('change', (e) => {
+            const todayStr = getTodayLocalDateString();
+            if (e.target.value && e.target.value <= todayStr) {
+                if (!tblStatus.value || tblStatus.value === 'Submit') {
+                    tblStatus.value = 'Approval';
+                }
+            } else {
+                if (tblStatus.value === 'Approval') {
+                    tblStatus.value = 'Submit';
+                }
+            }
+        });
+    }
+
     const inlineInputs = [
         document.getElementById('tblDate'),
         document.getElementById('tblClientName'),
@@ -1109,13 +1176,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 2. If currently adding a new client row (inlineAddRow)
         const inlineRow = document.getElementById('inlineAddRow');
-        const btnOpenModal = document.getElementById('btnOpenAddModal');
-        const btnHeaderAdd = document.querySelector('.btn-header-add');
+        const isAddButton = e.target.closest && (e.target.closest('.btn-header-add') || e.target.closest('#btnOpenAddModal') || e.target.closest('#btnEmptyAddClient'));
 
         if (inlineRow && (inlineRow.style.display === 'table-row' || (!inlineRow.classList.contains('d-none') && inlineRow.style.display !== 'none'))) {
             const isInsideAddRow = inlineRow.contains(e.target);
-            const isAddButton = (btnOpenModal && btnOpenModal.contains(e.target)) ||
-                                (btnHeaderAdd && btnHeaderAdd.contains(e.target));
 
             if (!isInsideAddRow && !isAddButton) {
                 const clientNameInput = document.getElementById('tblClientName');
@@ -1210,13 +1274,13 @@ function renderClientLedgerOnClientsPage(data) {
         // 2. Week's Tuesday audit day must have arrived (not ongoing/future week)
         // 3. Payment date cannot be in the future
         const isFuture = rec.date > todayStr;
-        const isCharged = (rec.is_charged !== undefined) ? rec.is_charged : (data.client.status === 'Charged');
+        const isCharged = (rec.is_charged !== undefined) ? rec.is_charged : (data.client.status === 'Charged' || data.client.status === 'Approval');
         const isAudited = (rec.is_audited !== undefined) ? rec.is_audited : (!rec.audit_date || rec.audit_date <= todayStr);
         const canReceive = isCharged && isAudited && !isFuture;
 
         let disabledReason = '';
         if (!isCharged) {
-            disabledReason = `Cannot mark received: Client status is "${data.client.status || 'Submit'}" (must be Charged)`;
+            disabledReason = `Cannot mark received: Client status is "${data.client.status || 'Submit'}" (must be Approval or Charged)`;
         } else if (!isAudited) {
             const nextAuditStr = rec.audit_formatted ? rec.audit_formatted : (rec.audit_date || 'next week');
             disabledReason = `Cannot mark received: Audit for this weekly report opens next week on ${nextAuditStr}`;
@@ -1286,6 +1350,7 @@ function renderClientLedgerOnClientsPage(data) {
                             if (cl) {
                                 cl.receiving = isChecked ? 'Received' : 'Pending';
                                 cl.is_received = isChecked ? 1 : 0;
+                                cl.status = isChecked ? 'Charged' : 'Approval';
                             }
                         }
                         const label = isApproval ? 'Approval Payment' : 'Residual Payment';

@@ -131,6 +131,13 @@ class ReportsController extends Controller
 
     public function getClientLedger(): void
     {
+        $user = $this->getCurrentUser();
+        $role = $user['role'] ?? '';
+        if ($role === 'client_user') {
+            $this->jsonResponse(['success' => false, 'error' => 'Unauthorized. Client users cannot view report statements.'], 403);
+            return;
+        }
+
         $clientId = (int)($_POST['client_id'] ?? 0);
         if ($clientId <= 0) {
             $this->jsonResponse(['success' => false, 'error' => 'Invalid client ID'], 400);

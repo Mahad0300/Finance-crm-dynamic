@@ -42,6 +42,7 @@ require VIEWS_PATH . '/admin/layouts/header.php';
                 <select id="filterStatus" class="filter-select-pill">
                     <option value="">All Status</option>
                     <option value="Submit">Submit</option>
+                    <option value="Approval">Approval</option>
                     <option value="Charged">Charged</option>
                     <option value="Kick Back">Kick Back</option>
                 </select>
@@ -225,6 +226,7 @@ require VIEWS_PATH . '/admin/layouts/header.php';
                             <select class="tbl-select" id="tblStatus">
                                 <option value="">-- Status --</option>
                                 <option value="Submit">Submit</option>
+                                <option value="Approval">Approval</option>
                                 <option value="Charged">Charged</option>
                                 <option value="Kick Back">Kick Back</option>
                             </select>

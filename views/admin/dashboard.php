@@ -61,15 +61,15 @@ require VIEWS_PATH . '/admin/layouts/header.php';
                         <div class="dash-week-select-list" id="dashWeekSelectList">
                             <?php if (!empty($availableWeeks)): ?>
                                 <?php foreach ($availableWeeks as $idx => $w): ?>
+                                    <?php $cleanRange = e($w['date_range'] ?? preg_replace('/^Week\s+\d+:\s*/i', '', $w['title'] ?? '')); ?>
                                     <div class="dash-week-item" 
                                          data-start="<?= $w['start_date'] ?>" 
                                          data-end="<?= $w['end_date'] ?>" 
-                                         data-title="<?= e($w['title']) ?>"
-                                         data-label="<?= e($w['week_label'] ?? 'Week') ?>"
-                                         data-range="<?= e($w['date_range'] ?? $w['title']) ?>">
+                                         data-title="<?= $cleanRange ?>"
+                                         data-label="<?= $cleanRange ?>"
+                                         data-range="<?= $cleanRange ?>">
                                         <div class="dash-week-item-left">
-                                            <span class="week-pill-badge"><?= e($w['week_label'] ?? 'Week') ?></span>
-                                            <span class="dash-week-date-text"><?= e($w['date_range'] ?? $w['title']) ?></span>
+                                            <span class="dash-week-date-text"><?= $cleanRange ?></span>
                                         </div>
                                     </div>
                                 <?php endforeach; ?>

@@ -302,7 +302,7 @@ function renderPerformanceLeaderboards(clientsList) {
                 connectorMap[name] = { name, chargedLeads: 0, totalLeads: 0 };
             }
             connectorMap[name].totalLeads++;
-            if (c.status === 'Approval' || c.status === 'Charged') {
+            if (c.status === 'Charged') {
                 connectorMap[name].chargedLeads++;
             }
         });
@@ -360,7 +360,7 @@ function renderPerformanceLeaderboards(clientsList) {
                 agentMap[name] = { name, count: 0, amount: 0, totalLeads: 0 };
             }
             agentMap[name].totalLeads++;
-            if (c.status === 'Approval' || c.status === 'Charged') {
+            if (c.status === 'Charged') {
                 agentMap[name].count++;
                 agentMap[name].amount += (parseFloat(c.approvalAmount) || parseFloat(c.initialPayment) || 0);
             }

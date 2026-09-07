@@ -19,7 +19,7 @@ function getCombinedReportClients() {
             combinedReportClients = window.APP_CONFIG.databaseReports.map(c => {
                 const pType = c.payment_type || '';
                 const isApproval = (pType.toLowerCase().includes('approval')) || (c.approval_payment !== null && c.approval_payment !== undefined && c.approval_payment !== '' && Number(c.approval_payment) > 0);
-                
+
                 let isReceived = false;
                 if (c.is_received !== undefined && c.is_received !== null) {
                     isReceived = Boolean(Number(c.is_received));
@@ -62,8 +62,8 @@ function renderCombinedReportsTable() {
     tbody.innerHTML = '';
 
     // Render Previous Week Remaining Balance Rows directly under thead if carry-forward exists
-    const prevList = (window.APP_CONFIG && Array.isArray(window.APP_CONFIG.previousRemainingList)) 
-        ? window.APP_CONFIG.previousRemainingList 
+    const prevList = (window.APP_CONFIG && Array.isArray(window.APP_CONFIG.previousRemainingList))
+        ? window.APP_CONFIG.previousRemainingList
         : [];
 
     if (prevList.length > 0) {
@@ -95,8 +95,8 @@ function renderCombinedReportsTable() {
             }
         });
     } else {
-        const prevRemaining = (window.APP_CONFIG && window.APP_CONFIG.previousRemaining) 
-            ? parseFloat(window.APP_CONFIG.previousRemaining) 
+        const prevRemaining = (window.APP_CONFIG && window.APP_CONFIG.previousRemaining)
+            ? parseFloat(window.APP_CONFIG.previousRemaining)
             : 0;
 
         if (prevRemaining > 0) {
@@ -137,14 +137,14 @@ function renderCombinedReportsTable() {
 
     clients.forEach(client => {
         const tr = document.createElement('tr');
-        
+
         // Approval vs Residual display
-        const approvalDisplay = (client.approvalPayment && client.approvalPayment > 0) 
-            ? formatCurrency(client.approvalPayment) 
+        const approvalDisplay = (client.approvalPayment && client.approvalPayment > 0)
+            ? formatCurrency(client.approvalPayment)
             : `<span class="text-muted-dash">-</span>`;
-            
-        const residualDisplay = (client.residual && client.residual > 0) 
-            ? formatCurrency(client.residual) 
+
+        const residualDisplay = (client.residual && client.residual > 0)
+            ? formatCurrency(client.residual)
             : `<span class="text-muted-dash">-</span>`;
 
         const planDisplay = client.plan ? `${client.plan} ${parseInt(client.plan) === 1 ? 'Month' : 'Months'}` : `<span class="text-muted-dash">-</span>`;
@@ -257,8 +257,8 @@ function updateCombinedTotals() {
     const totalReceivingTarget = thisWeekReceiving;
 
     const inputTotalReceived = document.getElementById('inputTotalReceived');
-    const enteredReceivedVal = (inputTotalReceived && inputTotalReceived.value !== '') 
-        ? (parseFloat(inputTotalReceived.value) || 0) 
+    const enteredReceivedVal = (inputTotalReceived && inputTotalReceived.value !== '')
+        ? (parseFloat(inputTotalReceived.value) || 0)
         : 0;
 
     const totalRemaining = Math.max(0, totalReceivingTarget - enteredReceivedVal);
@@ -352,75 +352,75 @@ function switchWeeklyCycle(startDate) {
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: formData.toString()
         })
-        .then(res => res.json())
-        .then(data => {
-            if (data && data.success) {
-                window.APP_CONFIG.activeWeek = data.week;
-                window.APP_CONFIG.databaseReports = data.records;
-                window.APP_CONFIG.activeReportSummary = data.summary;
-                if (data.previous_remaining_list !== undefined) {
-                    window.APP_CONFIG.previousRemainingList = data.previous_remaining_list;
-                }
-                if (data.previous_remaining !== undefined) {
-                    window.APP_CONFIG.previousRemaining = parseFloat(data.previous_remaining) || 0;
-                }
-
-                combinedReportClients = null;
-
-                // Update UI Header and Banner
-                const cleanDateText = data.week.date_range || (data.week.title ? data.week.title.replace(/^Week\s+\d+:\s*/i, '') : '');
-                const reportHeaderDate = document.getElementById('reportHeaderDate');
-                if (reportHeaderDate) reportHeaderDate.textContent = cleanDateText;
-
-                const bannerWorkWeek = document.getElementById('bannerWorkWeek');
-                if (bannerWorkWeek) bannerWorkWeek.textContent = cleanDateText;
-
-                const bannerAuditDate = document.getElementById('bannerAuditDate');
-                if (bannerAuditDate) bannerAuditDate.textContent = data.week.audit_formatted;
-
-                const bannerDueDate = document.getElementById('bannerDueDate');
-                if (bannerDueDate) bannerDueDate.textContent = data.week.due_formatted;
-
-                // Update inputTotalReceived
-                const inputTotalReceived = document.getElementById('inputTotalReceived');
-                if (inputTotalReceived) {
-                    const savedVal = (data.summary && data.summary.total_received_entered !== null && data.summary.total_received_entered !== undefined) 
-                        ? Number(data.summary.total_received_entered) 
-                        : 0;
-                    if (savedVal > 0) {
-                        inputTotalReceived.value = savedVal;
-                    } else {
-                        const checkedSum = (data.records || [])
-                            .filter(r => Number(r.is_received) === 1)
-                            .reduce((sum, r) => sum + (parseFloat(r.approval_payment || r.residual_payment) || 0), 0);
-                        inputTotalReceived.value = checkedSum > 0 ? checkedSum : '';
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.success) {
+                    window.APP_CONFIG.activeWeek = data.week;
+                    window.APP_CONFIG.databaseReports = data.records;
+                    window.APP_CONFIG.activeReportSummary = data.summary;
+                    if (data.previous_remaining_list !== undefined) {
+                        window.APP_CONFIG.previousRemainingList = data.previous_remaining_list;
                     }
-                }
-
-                // Sync select dropdown & custom dropdown UI
-                const selectWeeklyCycle = document.getElementById('selectWeeklyCycle');
-                if (selectWeeklyCycle) selectWeeklyCycle.value = data.week.start_date;
-
-                const currentWeekTriggerText = document.getElementById('currentWeekTriggerText');
-                if (currentWeekTriggerText) currentWeekTriggerText.textContent = data.week.title;
-
-                document.querySelectorAll('.week-dropdown-item').forEach(el => {
-                    if (el.getAttribute('data-date') === data.week.start_date) {
-                        el.classList.add('selected');
-                    } else {
-                        el.classList.remove('selected');
+                    if (data.previous_remaining !== undefined) {
+                        window.APP_CONFIG.previousRemaining = parseFloat(data.previous_remaining) || 0;
                     }
-                });
 
-                renderCombinedReportsTable();
-            }
-        })
-        .catch(err => {
-            console.error('Error switching week:', err);
-            if (typeof showToast === 'function') {
-                showToast('error', 'Network Error', 'Failed to switch weekly cycle.');
-            }
-        });
+                    combinedReportClients = null;
+
+                    // Update UI Header and Banner
+                    const cleanDateText = data.week.date_range || (data.week.title ? data.week.title.replace(/^Week\s+\d+:\s*/i, '') : '');
+                    const reportHeaderDate = document.getElementById('reportHeaderDate');
+                    if (reportHeaderDate) reportHeaderDate.textContent = cleanDateText;
+
+                    const bannerWorkWeek = document.getElementById('bannerWorkWeek');
+                    if (bannerWorkWeek) bannerWorkWeek.textContent = cleanDateText;
+
+                    const bannerAuditDate = document.getElementById('bannerAuditDate');
+                    if (bannerAuditDate) bannerAuditDate.textContent = data.week.audit_formatted;
+
+                    const bannerDueDate = document.getElementById('bannerDueDate');
+                    if (bannerDueDate) bannerDueDate.textContent = data.week.due_formatted;
+
+                    // Update inputTotalReceived
+                    const inputTotalReceived = document.getElementById('inputTotalReceived');
+                    if (inputTotalReceived) {
+                        const savedVal = (data.summary && data.summary.total_received_entered !== null && data.summary.total_received_entered !== undefined)
+                            ? Number(data.summary.total_received_entered)
+                            : 0;
+                        if (savedVal > 0) {
+                            inputTotalReceived.value = savedVal;
+                        } else {
+                            const checkedSum = (data.records || [])
+                                .filter(r => Number(r.is_received) === 1)
+                                .reduce((sum, r) => sum + (parseFloat(r.approval_payment || r.residual_payment) || 0), 0);
+                            inputTotalReceived.value = checkedSum > 0 ? checkedSum : '';
+                        }
+                    }
+
+                    // Sync select dropdown & custom dropdown UI
+                    const selectWeeklyCycle = document.getElementById('selectWeeklyCycle');
+                    if (selectWeeklyCycle) selectWeeklyCycle.value = data.week.start_date;
+
+                    const currentWeekTriggerText = document.getElementById('currentWeekTriggerText');
+                    if (currentWeekTriggerText) currentWeekTriggerText.textContent = data.week.title;
+
+                    document.querySelectorAll('.week-dropdown-item').forEach(el => {
+                        if (el.getAttribute('data-date') === data.week.start_date) {
+                            el.classList.add('selected');
+                        } else {
+                            el.classList.remove('selected');
+                        }
+                    });
+
+                    renderCombinedReportsTable();
+                }
+            })
+            .catch(err => {
+                console.error('Error switching week:', err);
+                if (typeof showToast === 'function') {
+                    showToast('error', 'Network Error', 'Failed to switch weekly cycle.');
+                }
+            });
     }
 }
 
@@ -504,12 +504,12 @@ function renderClientLedger(data) {
             totalReceived += (appAmount + resAmount);
         }
 
-        const approvalDisplay = appAmount > 0 
-            ? formatCurrency(appAmount) 
+        const approvalDisplay = appAmount > 0
+            ? formatCurrency(appAmount)
             : `<span class="text-muted-dash">-</span>`;
 
-        const residualDisplay = resAmount > 0 
-            ? formatCurrency(resAmount) 
+        const residualDisplay = resAmount > 0
+            ? formatCurrency(resAmount)
             : `<span class="text-muted-dash">-</span>`;
 
         const now = new Date();
@@ -583,39 +583,39 @@ function renderClientLedger(data) {
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: params.toString()
                 }).then(res => res.json())
-                .then(res => {
-                    if (res.success) {
-                        const label = isApproval ? 'Approval Payment' : 'Residual Payment';
-                        showToast('success', 'Status Updated', `${label} marked as ${isChecked ? 'Received' : 'Pending'}.`);
+                    .then(res => {
+                        if (res.success) {
+                            const label = isApproval ? 'Approval Payment' : 'Residual Payment';
+                            showToast('success', 'Status Updated', `${label} marked as ${isChecked ? 'Received' : 'Pending'}.`);
 
-                        // Keep in-memory combinedReportClients synced
-                        if (combinedReportClients) {
-                            const match = combinedReportClients.find(c => {
-                                if (recordId && c.recordId && String(c.recordId) === String(recordId)) return true;
-                                return (c.clientId === cId || c.id === cId) && c.date === pDate;
-                            });
-                            if (match) {
-                                match.isReceived = isChecked;
+                            // Keep in-memory combinedReportClients synced
+                            if (combinedReportClients) {
+                                const match = combinedReportClients.find(c => {
+                                    if (recordId && c.recordId && String(c.recordId) === String(recordId)) return true;
+                                    return (c.clientId === cId || c.id === cId) && c.date === pDate;
+                                });
+                                if (match) {
+                                    match.isReceived = isChecked;
+                                }
+                            }
+
+                            // Also update activeReportSummary if totals returned
+                            if (res.totals && window.APP_CONFIG && window.APP_CONFIG.activeReportSummary) {
+                                if (window.APP_CONFIG.activeReportSummary.id === res.totals.id) {
+                                    window.APP_CONFIG.activeReportSummary.total_receiving_target = res.totals.total_target;
+                                    window.APP_CONFIG.activeReportSummary.total_received_entered = res.totals.total_received;
+                                    window.APP_CONFIG.activeReportSummary.total_remaining_balance = res.totals.total_remaining;
+                                }
+                            }
+
+                            if (savedWeeklyReportState && combinedReportClients) {
+                                const newSum = combinedReportClients
+                                    .filter(c => c.isReceived)
+                                    .reduce((s, c) => s + (parseFloat(c.approvalPayment || c.residual) || 0), 0);
+                                savedWeeklyReportState.totalReceivedVal = newSum > 0 ? newSum : '';
                             }
                         }
-
-                        // Also update activeReportSummary if totals returned
-                        if (res.totals && window.APP_CONFIG && window.APP_CONFIG.activeReportSummary) {
-                            if (window.APP_CONFIG.activeReportSummary.id === res.totals.id) {
-                                window.APP_CONFIG.activeReportSummary.total_receiving_target = res.totals.total_target;
-                                window.APP_CONFIG.activeReportSummary.total_received_entered = res.totals.total_received;
-                                window.APP_CONFIG.activeReportSummary.total_remaining_balance = res.totals.total_remaining;
-                            }
-                        }
-
-                        if (savedWeeklyReportState && combinedReportClients) {
-                            const newSum = combinedReportClients
-                                .filter(c => c.isReceived)
-                                .reduce((s, c) => s + (parseFloat(c.approvalPayment || c.residual) || 0), 0);
-                            savedWeeklyReportState.totalReceivedVal = newSum > 0 ? newSum : '';
-                        }
-                    }
-                }).catch(err => console.log('Ledger toggle offline sync', err));
+                    }).catch(err => console.log('Ledger toggle offline sync', err));
             }
         });
     });
@@ -660,7 +660,7 @@ function exitClientLedger(shouldReRender = true) {
 function updateReportLiveHeaderDate() {
     const el = document.getElementById('reportHeaderDate');
     if (!el) return;
-    
+
     if (window.APP_CONFIG && window.APP_CONFIG.activeWeek) {
         const w = window.APP_CONFIG.activeWeek;
         el.textContent = w.date_range || (w.title ? w.title.replace(/^Week\s+\d+:\s*/i, '') : '');
@@ -680,8 +680,8 @@ function initReportsPage() {
     const inputTotalReceived = document.getElementById('inputTotalReceived');
     if (inputTotalReceived && window.APP_CONFIG) {
         const summary = window.APP_CONFIG.activeReportSummary;
-        const savedVal = (summary && summary.total_received_entered !== null && summary.total_received_entered !== undefined) 
-            ? Number(summary.total_received_entered) 
+        const savedVal = (summary && summary.total_received_entered !== null && summary.total_received_entered !== undefined)
+            ? Number(summary.total_received_entered)
             : 0;
         if (savedVal > 0) {
             inputTotalReceived.value = savedVal;
@@ -711,7 +711,7 @@ function initReportsPage() {
             e.stopPropagation();
             const dateVal = item.getAttribute('data-date');
             const titleVal = item.getAttribute('data-title');
-            
+
             const currentWeekTriggerText = document.getElementById('currentWeekTriggerText');
             if (currentWeekTriggerText && titleVal) currentWeekTriggerText.textContent = titleVal;
 
@@ -781,8 +781,8 @@ function initReportsPage() {
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(getCombinedReportClients(), null, 2));
             const downloadAnchor = document.createElement('a');
             downloadAnchor.setAttribute("href", dataStr);
-            const weekTitle = (window.APP_CONFIG && window.APP_CONFIG.activeWeek && window.APP_CONFIG.activeWeek.title) 
-                ? window.APP_CONFIG.activeWeek.title.replace(/[^a-zA-Z0-9]/g, '_') 
+            const weekTitle = (window.APP_CONFIG && window.APP_CONFIG.activeWeek && window.APP_CONFIG.activeWeek.title)
+                ? window.APP_CONFIG.activeWeek.title.replace(/[^a-zA-Z0-9]/g, '_')
                 : 'weekly_report';
             downloadAnchor.setAttribute("download", `report_${weekTitle}.json`);
             document.body.appendChild(downloadAnchor);

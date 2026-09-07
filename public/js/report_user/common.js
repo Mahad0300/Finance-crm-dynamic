@@ -5,9 +5,9 @@
  */
 
 // Global CSRF Header Interceptor for all fetch API requests
-(function() {
+(function () {
     const originalFetch = window.fetch;
-    window.fetch = function(input, init) {
+    window.fetch = function (input, init) {
         init = init || {};
         init.headers = init.headers || {};
         const csrf = window.APP_CONFIG && window.APP_CONFIG.csrfToken;
@@ -531,7 +531,7 @@ function deleteAgentFromList(role, name) {
 function populateAgentDropdown(selectEl, list, selectedValue = '') {
     if (!selectEl) return;
     selectEl.innerHTML = '';
-    
+
     const defaultOpt = document.createElement('option');
     defaultOpt.value = '';
     defaultOpt.textContent = '-- Select --';
@@ -587,12 +587,12 @@ function openThFilterPopover(triggerBtn, colKey, colTitle) {
 
     const rect = triggerBtn.getBoundingClientRect();
     const isReportsPage = !!document.getElementById('reportTable');
-    const activeFilters = isReportsPage 
+    const activeFilters = isReportsPage
         ? ((typeof reportsState !== 'undefined' && reportsState.columnFilters) ? reportsState.columnFilters : {})
         : (state.filters.columnFilters = state.filters.columnFilters || {});
 
     const rawVal = activeFilters[colKey];
-    
+
     // Normalize into array for multi-select
     let selectedValues = [];
     if (Array.isArray(rawVal)) {
@@ -607,7 +607,7 @@ function openThFilterPopover(triggerBtn, colKey, colTitle) {
     const popover = document.createElement('div');
     popover.className = 'th-filter-popover';
     popover.style.top = `${rect.bottom + 4}px`;
-    
+
     const popoverWidth = isDate ? 250 : 220;
     let leftPos = rect.left - 20;
     if (leftPos + popoverWidth > window.innerWidth - 10) {
@@ -621,8 +621,8 @@ function openThFilterPopover(triggerBtn, colKey, colTitle) {
     if (Array.isArray(rawVal)) {
         hasActiveFilter = rawVal.length > 0;
     } else if (rawVal && typeof rawVal === 'object') {
-        hasActiveFilter = (rawVal.mode === 'single' && !!rawVal.date) || 
-                          (rawVal.mode === 'range' && (!!rawVal.from || !!rawVal.to));
+        hasActiveFilter = (rawVal.mode === 'single' && !!rawVal.date) ||
+            (rawVal.mode === 'range' && (!!rawVal.from || !!rawVal.to));
     } else if (typeof rawVal === 'string') {
         hasActiveFilter = rawVal.trim().length > 0;
     }
@@ -725,7 +725,7 @@ function openThFilterPopover(triggerBtn, colKey, colTitle) {
         if (isReportsPage && typeof getStaticReportClients === 'function') {
             const reportData = getStaticReportClients();
             if (colKey === 'plan') {
-                uniqueValues = Array.from(new Set(reportData.map(c => String(c.plan)))).sort((a,b) => parseInt(a) - parseInt(b));
+                uniqueValues = Array.from(new Set(reportData.map(c => String(c.plan)))).sort((a, b) => parseInt(a) - parseInt(b));
             } else if (colKey === 'receiving') {
                 uniqueValues = ['Pending', 'Received'];
             } else if (colKey === 'smartAgent') {
@@ -776,7 +776,7 @@ function openThFilterPopover(triggerBtn, colKey, colTitle) {
                 const isChecked = currentSelectedSet.has(String(val).toLowerCase());
                 const item = document.createElement('label');
                 item.className = `th-filter-checkbox-item ${isChecked ? 'checked-item' : ''}`;
-                
+
                 let displayLabel = val;
                 if (colKey === 'plan') displayLabel = `${val} ${val == 1 ? 'Month' : 'Months'}`;
 
@@ -1013,8 +1013,8 @@ function applyColumnFilter(colKey, value) {
 
 function updateThFilterIndicators() {
     const isReportsPage = !!document.getElementById('reportTable');
-    const colFilters = isReportsPage 
-        ? ((typeof reportsState !== 'undefined' && reportsState.columnFilters) ? reportsState.columnFilters : {}) 
+    const colFilters = isReportsPage
+        ? ((typeof reportsState !== 'undefined' && reportsState.columnFilters) ? reportsState.columnFilters : {})
         : (state.filters.columnFilters || {});
 
     document.querySelectorAll('.th-filter-btn').forEach(btn => {
@@ -1185,26 +1185,26 @@ function handleViewClient(clientId) {
 
     if (viewModalBody) {
         const totalMonths = 4;
-        let baseDate = client.initialPaymentDate 
-            ? new Date(client.initialPaymentDate + 'T00:00:00') 
+        let baseDate = client.initialPaymentDate
+            ? new Date(client.initialPaymentDate + 'T00:00:00')
             : (client.date ? new Date(client.date + 'T00:00:00') : new Date());
-        
+
         let scheduleRowsHtml = '';
         for (let i = 1; i <= totalMonths; i++) {
             const installmentDate = new Date(baseDate);
             installmentDate.setMonth(baseDate.getMonth() + (i - 1));
-            
+
             const dateStr = installmentDate.toLocaleDateString('en-US', {
                 month: 'short',
                 day: 'numeric',
                 year: 'numeric'
             });
-            
+
             let rowStatus = 'Pending';
             if (i === 1) {
                 rowStatus = client.receiving || 'Pending';
             }
-            
+
             scheduleRowsHtml += `
                 <tr>
                     <td class="text-center font-bold text-secondary">${String(i).padStart(2, '0')}</td>
@@ -1227,7 +1227,7 @@ function handleViewClient(clientId) {
                         </div>
                     </div>
                     <div class="report-meta">
-                        <div class="report-date-tag">Date: ${new Date().toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'})}</div>
+                        <div class="report-date-tag">Date: ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
                         <div class="report-date-tag">Account Status: <strong class="text-primary">${client.status.toUpperCase()}</strong></div>
                     </div>
                 </div>
@@ -1343,10 +1343,10 @@ function adjustTableHeight() {
         const outerWrapper = container.closest('.table-outer-wrapper');
         const footer = outerWrapper ? outerWrapper.querySelector('.table-pagination-footer') : null;
         const footerHeight = footer ? footer.offsetHeight : 38;
-        
+
         const rect = container.getBoundingClientRect();
         const availableHeight = window.innerHeight - rect.top - footerHeight - 35;
-        
+
         if (availableHeight > 180) {
             container.style.maxHeight = `${Math.floor(availableHeight)}px`;
         }
@@ -1416,7 +1416,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // User Profile Dropdown Toggle
     const userProfileBtn = document.getElementById('userProfileBtn');
     const userProfileDropdown = document.getElementById('userProfileDropdown');
-    
+
     if (userProfileBtn && userProfileDropdown) {
         userProfileBtn.addEventListener('click', (e) => {
             e.stopPropagation();

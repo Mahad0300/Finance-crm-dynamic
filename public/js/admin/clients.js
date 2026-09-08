@@ -221,6 +221,15 @@ function getFilteredAndSortedClients() {
             if (valA > valB) return order === 'asc' ? 1 : -1;
             return 0;
         });
+    } else {
+        filtered.sort((a, b) => {
+            const dateA = a.date || '';
+            const dateB = b.date || '';
+            if (dateA !== dateB) {
+                return dateB.localeCompare(dateA);
+            }
+            return (Number(b.id) || 0) - (Number(a.id) || 0);
+        });
     }
 
     return filtered;

@@ -187,7 +187,7 @@ function calculateApprovalAndResidual(paymentVal) {
 
     if (rule) {
         const approval = rule.approval;
-        const residual = Number((approval * 0.05).toFixed(2));
+        const residual = Number((num * 0.05).toFixed(2));
         return {
             approval: approval,
             residual: residual,
@@ -1280,7 +1280,7 @@ function handleViewClient(clientId) {
                     <div class="report-kpi-bar-item">
                         <div class="kpi-label">Projected Residuals</div>
                         <div class="kpi-value kpi-purple">${formatCurrency((client.residual || 0) * totalMonths)}</div>
-                        <div class="kpi-sub">5% of Approval x ${totalMonths}</div>
+                        <div class="kpi-sub">5% of Initial x ${totalMonths}</div>
                     </div>
                 </div>
                 

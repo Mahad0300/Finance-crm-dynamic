@@ -51,11 +51,21 @@ class Client extends Model {
         }
     }
 
+    public function syncResidualValues(): void {
+        if (!$this->isConnected()) return;
+        try {
+            $this->query("UPDATE `clients` SET `residual` = ROUND(`initial_payment` * 0.05, 2) WHERE `initial_payment` IS NOT NULL AND `initial_payment` > 0 AND (`residual` IS NULL OR `residual` != ROUND(`initial_payment` * 0.05, 2))");
+        } catch (\Throwable $e) {
+            // Silently continue
+        }
+    }
+
     public function getAll(array $filters = []): array {
         if (!$this->isConnected()) return [];
         $this->ensureIndexes();
         $this->syncDueApprovalStatuses();
-        $sql = "SELECT * FROM `clients` ORDER BY `id` DESC";
+        $this->syncResidualValues();
+        $sql = "SELECT * FROM `clients` ORDER BY `date` DESC, `id` DESC";
         return $this->fetchAll($sql);
     }
 
